@@ -2,6 +2,7 @@ import { Outlet, createRootRoute } from '@tanstack/react-router'
 import { EmojiBackground } from '../components/EmojiBackground'
 import '@mantine/core/styles.css';
 import '@mantine/dates/styles.css';
+import '@mantine/notifications/styles.css';
 
 
 export const Route = createRootRoute({

@@ -1,14 +1,15 @@
 import { StrictMode } from 'react'
 import ReactDOM from 'react-dom/client'
 import { RouterProvider, createRouter } from '@tanstack/react-router'
-import { MantineProvider, DEFAULT_THEME } from '@mantine/core';
+import { MantineProvider } from '@mantine/core';
 import { mantineTheme } from './theme.ts';
-
 
 // Import the generated route tree
 import { routeTree } from './routeTree.gen'
 import { NotFoundPage } from './components/NotFound.tsx'
 import reportWebVitals from './reportWebVitals.ts'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Notifications } from '@mantine/notifications';
 
 // Create a new router instance
 const router = createRouter({
@@ -28,15 +29,20 @@ declare module '@tanstack/react-router' {
   }
 }
 
+const queryClient = new QueryClient()
+
 // Render the app
 const rootElement = document.getElementById('app')
 if (rootElement && !rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement)
   root.render(
     <StrictMode>
-      <MantineProvider theme={mantineTheme} defaultColorScheme="dark">
-        <RouterProvider router={router} />
-      </MantineProvider>
+      <QueryClientProvider client={queryClient}>
+        <MantineProvider theme={mantineTheme} defaultColorScheme="dark">
+          <Notifications position="top-center" />
+          <RouterProvider router={router} />
+        </MantineProvider>
+      </QueryClientProvider>
     </StrictMode>,
   )
 }

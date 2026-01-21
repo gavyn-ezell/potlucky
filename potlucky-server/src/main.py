@@ -1,5 +1,6 @@
 import uuid
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from botocore.exceptions import ClientError
 
 from src.models.potluck import PotluckPayload, PotluckItem, DishPayload, Dish
@@ -7,17 +8,29 @@ from src.dynamodb.client import dynamodb_client
 
 app = FastAPI()
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 @app.post("/potluck")
 def create_potluck(payload: PotluckPayload):
+    potluckId = str(uuid.uuid4())
     try:
         dynamodb_client.create_potluck(PotluckItem(
-            potluckId=str(uuid.uuid4()),
+            potluckId=potluckId,
             **payload.model_dump()
         ))
     except ClientError as e:
         raise HTTPException(status_code=500, detail="Something went wrong")
 
-    return {"message": "Potluck created."}
+    return {
+        "message": "Potluck created.",
+        "potluckId": potluckId
+    }
 
 @app.get("/potluck/{potluckId}")
 def get_potluck(potluckId: str):
@@ -28,16 +41,20 @@ def get_potluck(potluckId: str):
 
 @app.post("/potluck/{potluckId}/dish")
 def add_dish(potluckId: str, payload: DishPayload):
+    dishId = str(uuid.uuid4())
     try:
         dynamodb_client.add_dish_to_potluck(potluckId, Dish(
-            dishId=str(uuid.uuid4()),
+            dishId=dishId,
             **payload.model_dump()
         ))
     except ClientError as e:
         print(f"AWS Error: {e}")
         raise HTTPException(status_code=500, detail="Database failure")
 
-    return {"message": "Dish added to potluck."}
+    return {
+        "message": "Dish added to potluck.",
+        "dishId": dishId
+    }
 
 @app.delete("/potluck/{potluckId}/dish/{dishId}")
 def remove_dish(potluckId: str, dishId: str):
