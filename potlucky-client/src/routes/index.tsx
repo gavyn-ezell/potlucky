@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { Container, Paper, Title, TextInput, Button, Stack, Text, Group, Select } from '@mantine/core'
+import { Container, Paper, Title, TextInput, Button, Stack, Text, Group, Select, Box } from '@mantine/core'
 import { DateTimePicker } from '@mantine/dates'
 import { notifications } from '@mantine/notifications'
 import { formOptions, useForm } from '@tanstack/react-form'
@@ -25,7 +25,7 @@ const defaultPotluckFormEntry: PotluckFormEntry = {
 }
 
 const formSchema = z.object({
-  name: z.string().min(2, 'Event name must have at least 2 characters'),
+  name: z.string().min(4, 'Event name must have at least 4 characters').max(128, 'Event name must be at most 64 characters'),
   datetime: z.string().min(1, 'Date and time is required'),
   timezone: z.string().refine((val) => Intl.supportedValuesOf('timeZone').includes(val), 'Invalid timezone')
 })
@@ -33,14 +33,12 @@ const formSchema = z.object({
 const formOpts = formOptions({
   defaultValues: defaultPotluckFormEntry,
   validators: {
-    onMount: formSchema,
-    onChange: formSchema
+    onBlur: formSchema
   },
 })
 
 function MainPage() {
   const navigate = useNavigate()
-
 
   const mutation = useMutation({
     mutationFn: async (values: PotluckFormEntry) => {
@@ -51,6 +49,8 @@ function MainPage() {
           timezone: values.timezone,
         }
 
+        //fake delay for testing
+        await new Promise((resolve) => setTimeout(resolve, 5000))
         const response = await fetch(`${import.meta.env.VITE_POTLUCKY_API_URL}/potluck`, {
           method: 'POST',
           headers: {
@@ -89,6 +89,7 @@ function MainPage() {
       })
     }
   })
+  
   const form = useForm({
     ...formOpts,
     onSubmit: async ({ value }) => {
@@ -97,15 +98,12 @@ function MainPage() {
   })
 
   return (
-    <Container size="sm" py="2xl" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center' }}>
-      <Paper p={50} radius="lg" withBorder style={{ width: '100%', backdropFilter: 'blur(8px)', backgroundColor: 'rgba(255, 255, 255, 0.05)' }}>
-        <Stack gap="lg">
+    <Container style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', border: '1px solid red' }}>
+      
+      <Paper>
           <header>
-            <Title order={1} size="h2" mb="xs" ta="center">
-              Potlucky
-            </Title>
-            <Text c="dimmed" size="sm" ta="center" mb="lg">
-              Start planning your next potluck
+            <Text size="xl" ta="center" mb="lg" fw="bold" >
+               Start planning your next potluck!
             </Text>
           </header>
 
@@ -115,25 +113,29 @@ function MainPage() {
               form.handleSubmit()
             }}
           >
-            <Stack gap="md">
+            <Stack>
               <form.Field
                 name="name"
                 children={(field) => {
-                  return (<TextInput
+                    return (
+                  <TextInput
                     label="Event Name"
-                    placeholder="NBA Finals Watch Party"
+                    placeholder={field.state.meta.isTouched ? undefined : 'Board Game Night'}
                     leftSection={<IconSignature size={18} />}
                     required
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
-
-                  />)
+                  />
+                )
+                 
 
                 }}
               />
 
-              <form.Field
+              
+
+              {/* <form.Field
                 name="datetime"
                 children={(field) => {
                   return (<DateTimePicker
@@ -153,8 +155,8 @@ function MainPage() {
                   />)
 
                 }}
-              />
-              <form.Field
+              /> */}
+              {/* <form.Field
                 name="timezone"
               >
                 {(field) => (
@@ -170,9 +172,10 @@ function MainPage() {
                     onChange={(val) => field.handleChange(val || '')}
                   />
                 )}
-              </form.Field>
+              </form.Field> */}
+              
 
-              <form.Subscribe
+              {/* <form.Subscribe
                 selector={(state) => [state.canSubmit, state.isSubmitting]}
               >
                 {([canSubmit, isSubmitting]) => (
@@ -188,11 +191,26 @@ function MainPage() {
                     </Button>
                   </Group>
                 )}
-              </form.Subscribe>
+              </form.Subscribe> */}
             </Stack>
+ 
           </form>
-        </Stack>
+
+
       </Paper>
     </Container>
+    // <Container strategy="grid" size={500} style={{ border: '1px solid red' }}>
+    //   <Box bg="var(--mantine-color-indigo-light)" h={50}>
+    //     Main content
+    //   </Box>
+
+    //   <Box data-breakout bg="var(--mantine-color-indigo-light)" mt="xs">
+    //     <div>Breakout</div>
+
+    //     <Box data-container bg="indigo" c="white" h={50}>
+    //       <div>Container inside breakout</div>
+    //     </Box>
+    //   </Box>
+    // </Container>
   )
 }
