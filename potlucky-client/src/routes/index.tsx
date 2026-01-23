@@ -7,6 +7,7 @@ import { IconCalendar, IconSignature, IconWorld, IconX } from '@tabler/icons-rea
 import dayjs from 'dayjs'
 import { z } from 'zod'
 import { useMutation } from '@tanstack/react-query'
+import { use, useState } from 'react'
 
 export const Route = createFileRoute('/')({
   component: MainPage,
@@ -14,31 +15,41 @@ export const Route = createFileRoute('/')({
 
 interface PotluckFormEntry {
   name: string
-  datetime: string
+  datetime: Date | null
   timezone: string
 }
 
 const defaultPotluckFormEntry: PotluckFormEntry = {
   name: '',
-  datetime: '',
-  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+  datetime: new Date(),
+  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
 }
 
 const formSchema = z.object({
   name: z.string().min(4, 'Event name must have at least 4 characters').max(128, 'Event name must be at most 64 characters'),
-  datetime: z.string().min(1, 'Date and time is required'),
-  timezone: z.string().refine((val) => Intl.supportedValuesOf('timeZone').includes(val), 'Invalid timezone')
+  datetime: z
+    .date()
+    .nullable()
+    .refine((val) => val !== null, 'Date is required')
+    .refine((val) => val && val > new Date(), 'Event must be in the future'),
+  timezone: z.string().refine((val) => Intl.supportedValuesOf('timeZone').includes(val), 'Invalid timezone'),
 })
 
 const formOpts = formOptions({
   defaultValues: defaultPotluckFormEntry,
   validators: {
-    onBlur: formSchema
+    onBlur: formSchema,
+    onChange: formSchema
   },
 })
 
 function MainPage() {
   const navigate = useNavigate()
+
+  const [isFocused, setIsFocused] = useState({
+    'name': false,
+    'datetime': false
+  })
 
   const mutation = useMutation({
     mutationFn: async (values: PotluckFormEntry) => {
@@ -89,7 +100,7 @@ function MainPage() {
       })
     }
   })
-  
+
   const form = useForm({
     ...formOpts,
     onSubmit: async ({ value }) => {
@@ -98,65 +109,99 @@ function MainPage() {
   })
 
   return (
-    <Container style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', border: '1px solid red' }}>
-      
-      <Paper>
-          <header>
-            <Text size="xl" ta="center" mb="lg" fw="bold" >
-               Start planning your next potluck!
-            </Text>
-          </header>
+    <Container style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
 
-          <form
-            onSubmit={(e) => {
-              e.preventDefault()
-              form.handleSubmit()
-            }}
-          >
-            <Stack>
-              <form.Field
-                name="name"
-                children={(field) => {
-                    return (
+      <Paper >
+        <header>
+          <Text size="xl" ta="center" mb="lg" fw="bold" >
+            Start planning your next potluck!
+          </Text>
+        </header>
+
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            form.handleSubmit()
+          }}
+        >
+          <Stack>
+            <form.Field
+              name="name"
+              children={(field) => {
+                return (
                   <TextInput
-                    label="Event Name"
-                    placeholder={field.state.meta.isTouched ? undefined : 'Board Game Night'}
-                    leftSection={<IconSignature size={18} />}
                     required
+                    label="Event Name"
+                    placeholder={field.state.meta.isTouched ? undefined : `e.g. Board Game Night`}
+                    leftSection={<IconSignature size={18} />}
                     value={field.state.value}
-                    onBlur={field.handleBlur}
+                    onFocus={() => setIsFocused({
+                      'name': true,
+                      'datetime': false
+                    })}
+                    onBlur={() => {
+                      setIsFocused({
+                        'name': false,
+                        'datetime': false
+                      })
+                      field.handleBlur();
+                    }}
                     onChange={(e) => field.handleChange(e.target.value)}
+                    error={!isFocused['name']
+                      && field.state.meta.isDirty
+                      && !field.state.meta.isValid
+                      ? field.state.meta.errors[0]?.message
+                      : null}
                   />
                 )
-                 
+              }}
+            />
 
-                }}
-              />
 
-              
 
-              {/* <form.Field
-                name="datetime"
-                children={(field) => {
-                  return (<DateTimePicker
-                    label="Date & Time"
-                    leftSection={<IconCalendar size={18} />}
-                    valueFormat="MM/DD/YYYY HH:mm A"
-                    timePickerProps={{
-                      withDropdown: true,
-                      popoverProps: { withinPortal: false },
-                      format: '12h',
-                    }}
-                    placeholder="Pick a date and time"
-                    required
-                    value={field.state.value && field.state.value !== '' ? new Date(field.state.value) : null}
-                    onBlur={field.handleBlur}
-                    onChange={(date) => field.handleChange(date ? dayjs(date).toISOString() : '')}
-                  />)
+            <form.Field
+              name="datetime"
+              children={(field) => {
+                return (<DateTimePicker
+                dropdownType="modal"
+                  label="Date & Time"
+                  required
+                  leftSection={<IconCalendar size={18} />}
+                  valueFormat="MM/DD/YYYY HH:mm A"
+                  timePickerProps={{
+                    withDropdown: true,
+                    popoverProps: { withinPortal: false },
+                    format: '12h',
+                  }}
+                  placeholder={field.state.meta.isTouched ? undefined : 'Pick a date and time'}
+                  value={field.state.value}
+                  onFocus={() => {
+                    setIsFocused({
+                      'name': false,
+                      'datetime': true
+                    })
+                  }}
+                  onBlur={() => {
+                    setIsFocused({
+                      'name': false,
+                      'datetime': false
+                    })
+                    field.handleBlur();
+                  }}
+                  onChange={(date) => {
+                    field.handleChange(new Date(date!))
+                  }}
+                  error={!isFocused['datetime']
+                    && field.state.meta.isTouched
+                    && !field.state.meta.isValid
+                    ? field.state.meta.errors[0]?.message
+                    : null}
+                />)
 
-                }}
-              /> */}
-              {/* <form.Field
+              }}
+            />
+
+            <form.Field
                 name="timezone"
               >
                 {(field) => (
@@ -172,10 +217,10 @@ function MainPage() {
                     onChange={(val) => field.handleChange(val || '')}
                   />
                 )}
-              </form.Field> */}
-              
+              </form.Field>
 
-              {/* <form.Subscribe
+
+            <form.Subscribe
                 selector={(state) => [state.canSubmit, state.isSubmitting]}
               >
                 {([canSubmit, isSubmitting]) => (
@@ -191,26 +236,13 @@ function MainPage() {
                     </Button>
                   </Group>
                 )}
-              </form.Subscribe> */}
-            </Stack>
- 
-          </form>
+              </form.Subscribe>
+          </Stack>
+
+        </form>
 
 
       </Paper>
     </Container>
-    // <Container strategy="grid" size={500} style={{ border: '1px solid red' }}>
-    //   <Box bg="var(--mantine-color-indigo-light)" h={50}>
-    //     Main content
-    //   </Box>
-
-    //   <Box data-breakout bg="var(--mantine-color-indigo-light)" mt="xs">
-    //     <div>Breakout</div>
-
-    //     <Box data-container bg="indigo" c="white" h={50}>
-    //       <div>Container inside breakout</div>
-    //     </Box>
-    //   </Box>
-    // </Container>
   )
 }
