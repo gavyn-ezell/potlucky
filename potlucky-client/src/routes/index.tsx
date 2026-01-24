@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { Container, Paper, Title, TextInput, Button, Stack, Text, Group, Select, Box } from '@mantine/core'
+import { Container, Paper, Title, TextInput, Button, Stack, Text, Textarea, Group, Select, Box } from '@mantine/core'
 import { DateTimePicker } from '@mantine/dates'
 import { notifications } from '@mantine/notifications'
 import { formOptions, useForm } from '@tanstack/react-form'
@@ -9,35 +9,41 @@ import { z } from 'zod'
 import { useMutation } from '@tanstack/react-query'
 import { use, useState } from 'react'
 
+
 export const Route = createFileRoute('/')({
   component: MainPage,
 })
+
+
+const INFORMATION_MAX_LENGTH = 512
 
 interface PotluckFormEntry {
   name: string
   datetime: Date | null
   timezone: string
+  information: string | undefined
 }
 
 const defaultPotluckFormEntry: PotluckFormEntry = {
   name: '',
-  datetime: new Date(),
+  datetime: null,
   timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  information: ''
 }
 
 const formSchema = z.object({
   name: z.string().min(4, 'Event name must have at least 4 characters').max(128, 'Event name must be at most 64 characters'),
   datetime: z
     .date()
-    .nullable()
-    .refine((val) => val !== null, 'Date is required')
     .refine((val) => val && val > new Date(), 'Event must be in the future'),
   timezone: z.string().refine((val) => Intl.supportedValuesOf('timeZone').includes(val), 'Invalid timezone'),
+  information: z.string().max(INFORMATION_MAX_LENGTH, `Information must be at most ${INFORMATION_MAX_LENGTH} characters`)
 })
 
 const formOpts = formOptions({
   defaultValues: defaultPotluckFormEntry,
   validators: {
+    onMount: formSchema,
     onBlur: formSchema,
     onChange: formSchema
   },
@@ -48,7 +54,8 @@ function MainPage() {
 
   const [isFocused, setIsFocused] = useState({
     'name': false,
-    'datetime': false
+    'datetime': false,
+    'information': false
   })
 
   const mutation = useMutation({
@@ -58,10 +65,9 @@ function MainPage() {
           name: values.name,
           datetime: values.datetime ? dayjs(values.datetime).toISOString() : '',
           timezone: values.timezone,
+          information: values.information
         }
 
-        //fake delay for testing
-        await new Promise((resolve) => setTimeout(resolve, 5000))
         const response = await fetch(`${import.meta.env.VITE_POTLUCKY_API_URL}/potluck`, {
           method: 'POST',
           headers: {
@@ -135,14 +141,17 @@ function MainPage() {
                     placeholder={field.state.meta.isTouched ? undefined : `e.g. Board Game Night`}
                     leftSection={<IconSignature size={18} />}
                     value={field.state.value}
+                    disabled={mutation.isPending}
                     onFocus={() => setIsFocused({
                       'name': true,
-                      'datetime': false
+                      'datetime': false,
+                      'information': false
                     })}
                     onBlur={() => {
                       setIsFocused({
                         'name': false,
-                        'datetime': false
+                        'datetime': false,
+                        'information': false
                       })
                       field.handleBlur();
                     }}
@@ -163,7 +172,7 @@ function MainPage() {
               name="datetime"
               children={(field) => {
                 return (<DateTimePicker
-                dropdownType="modal"
+                  dropdownType="modal"
                   label="Date & Time"
                   required
                   leftSection={<IconCalendar size={18} />}
@@ -173,18 +182,20 @@ function MainPage() {
                     popoverProps: { withinPortal: false },
                     format: '12h',
                   }}
-                  placeholder={field.state.meta.isTouched ? undefined : 'Pick a date and time'}
                   value={field.state.value}
+                  disabled={mutation.isPending}
                   onFocus={() => {
                     setIsFocused({
                       'name': false,
-                      'datetime': true
+                      'datetime': true,
+                      'information': false
                     })
                   }}
                   onBlur={() => {
                     setIsFocused({
                       'name': false,
-                      'datetime': false
+                      'datetime': false,
+                      'information': false
                     })
                     field.handleBlur();
                   }}
@@ -202,41 +213,76 @@ function MainPage() {
             />
 
             <form.Field
-                name="timezone"
-              >
-                {(field) => (
-                  <Select
-                    label="Timezone"
-                    placeholder="Select your timezone"
-                    leftSection={<IconWorld size={18} />}
-                    required
-                    data={Intl.supportedValuesOf('timeZone')}
-                    searchable
+              name="timezone"
+            >
+              {(field) => (
+                <Select
+                  label="Timezone"
+                  placeholder="Select your timezone"
+                  leftSection={<IconWorld size={18} />}
+                  required
+                  data={Intl.supportedValuesOf('timeZone')}
+                  searchable
+                  value={field.state.value}
+                  disabled={mutation.isPending}
+                  onBlur={field.handleBlur}
+                  onChange={(val) => field.handleChange(val || '')}
+                />
+              )}
+            </form.Field>
+
+
+            <form.Field
+              name="information"
+              children={(field) => {
+                return (
+                  <Textarea
+                    label="Information"
+                    placeholder={field.state.meta.isTouched ? undefined : 'Add any additional information here like an address, dish requirements, etc.'}
                     value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(val) => field.handleChange(val || '')}
+                    disabled={mutation.isPending}
+                    onFocus={() => setIsFocused({
+                      'name': false,
+                      'information': true,
+                      'datetime': false
+                    })}
+                    onBlur={() => {
+                      setIsFocused({
+                        'name': false,
+                        'information': false,
+                        'datetime': false
+                      })
+                      field.handleBlur();
+                    }}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    error={!isFocused['information']
+                      && field.state.meta.isDirty
+                      && !field.state.meta.isValid
+                      ? field.state.meta.errors[0]?.message
+                      : null}
                   />
-                )}
-              </form.Field>
+                )
+              }}
+            />
 
 
             <form.Subscribe
-                selector={(state) => [state.canSubmit, state.isSubmitting]}
-              >
-                {([canSubmit, isSubmitting]) => (
-                  <Group justify="flex-end" mt="md">
-                    <Button
-                      type="submit"
-                      size="md"
-                      fullWidth
-                      loading={isSubmitting}
-                      disabled={!canSubmit}
-                    >
-                      Create
-                    </Button>
-                  </Group>
-                )}
-              </form.Subscribe>
+              selector={(state) => [state.canSubmit]}
+            >
+              {([canSubmit]) => (
+                <Group justify="flex-end" mt="md">
+                  <Button
+                    type="submit"
+                    size="md"
+                    fullWidth
+                    loading={mutation.isPending}
+                    disabled={!canSubmit}
+                  >
+                    Create
+                  </Button>
+                </Group>
+              )}
+            </form.Subscribe>
           </Stack>
 
         </form>
