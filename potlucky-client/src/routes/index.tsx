@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { Container, Paper, Title, TextInput, Button, Stack, Text, Group, Select } from '@mantine/core'
+import { Container, Paper, Title, TextInput, Button, Stack, Text, Textarea, Group, Select, Box } from '@mantine/core'
 import { DateTimePicker } from '@mantine/dates'
 import { notifications } from '@mantine/notifications'
 import { formOptions, useForm } from '@tanstack/react-form'
@@ -7,33 +7,41 @@ import { IconCalendar, IconSignature, IconWorld, IconX } from '@tabler/icons-rea
 import dayjs from 'dayjs'
 import { z } from 'zod'
 import { useMutation } from '@tanstack/react-query'
+import { use, useState } from 'react'
+
 
 export const Route = createFileRoute('/')({
   component: MainPage,
 })
 
+
+const INFORMATION_MAX_LENGTH = 512
+
 interface PotluckFormEntry {
   name: string
-  datetime: string
-  timezone: string
+  datetime: Date | null
+  information: string | undefined
 }
 
 const defaultPotluckFormEntry: PotluckFormEntry = {
   name: '',
-  datetime: '',
-  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+  datetime: null,
+  information: ''
 }
 
 const formSchema = z.object({
-  name: z.string().min(2, 'Event name must have at least 2 characters'),
-  datetime: z.string().min(1, 'Date and time is required'),
-  timezone: z.string().refine((val) => Intl.supportedValuesOf('timeZone').includes(val), 'Invalid timezone')
+  name: z.string().min(4, 'Event name must have at least 4 characters').max(128, 'Event name must be at most 64 characters'),
+  datetime: z
+    .date()
+    .refine((val) => val && val > new Date(), 'Event must be in the future'),
+  information: z.string().max(INFORMATION_MAX_LENGTH, `Information must be at most ${INFORMATION_MAX_LENGTH} characters`)
 })
 
 const formOpts = formOptions({
   defaultValues: defaultPotluckFormEntry,
   validators: {
     onMount: formSchema,
+    onBlur: formSchema,
     onChange: formSchema
   },
 })
@@ -41,6 +49,11 @@ const formOpts = formOptions({
 function MainPage() {
   const navigate = useNavigate()
 
+  const [isFocused, setIsFocused] = useState({
+    'name': false,
+    'datetime': false,
+    'information': false
+  })
 
   const mutation = useMutation({
     mutationFn: async (values: PotluckFormEntry) => {
@@ -48,7 +61,7 @@ function MainPage() {
         const payload = {
           name: values.name,
           datetime: values.datetime ? dayjs(values.datetime).toISOString() : '',
-          timezone: values.timezone,
+          information: values.information
         }
 
         const response = await fetch(`${import.meta.env.VITE_POTLUCKY_API_URL}/potluck`, {
@@ -89,6 +102,7 @@ function MainPage() {
       })
     }
   })
+
   const form = useForm({
     ...formOpts,
     onSubmit: async ({ value }) => {
@@ -97,101 +111,160 @@ function MainPage() {
   })
 
   return (
-    <Container size="sm" py="2xl" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center' }}>
-      <Paper p={50} radius="lg" withBorder style={{ width: '100%', backdropFilter: 'blur(8px)', backgroundColor: 'rgba(255, 255, 255, 0.05)' }}>
-        <Stack gap="lg">
-          <header>
-            <Title order={1} size="h2" mb="xs" ta="center">
-              Potlucky
-            </Title>
-            <Text c="dimmed" size="sm" ta="center" mb="lg">
-              Start planning your next potluck
-            </Text>
-          </header>
+    <Container style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
 
-          <form
-            onSubmit={(e) => {
-              e.preventDefault()
-              form.handleSubmit()
-            }}
-          >
-            <Stack gap="md">
-              <form.Field
-                name="name"
-                children={(field) => {
-                  return (<TextInput
+      <Paper >
+        <header>
+          <Text size="xl" ta="center" mb="lg" fw="bold" >
+            Start planning your next potluck!
+          </Text>
+        </header>
+
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            form.handleSubmit()
+          }}
+        >
+          <Stack>
+            <form.Field
+              name="name"
+              children={(field) => {
+                return (
+                  <TextInput
+                    required
                     label="Event Name"
-                    placeholder="NBA Finals Watch Party"
+                    placeholder={field.state.meta.isTouched ? undefined : `e.g. Board Game Night`}
                     leftSection={<IconSignature size={18} />}
-                    required
                     value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-
-                  />)
-
-                }}
-              />
-
-              <form.Field
-                name="datetime"
-                children={(field) => {
-                  return (<DateTimePicker
-                    label="Date & Time"
-                    leftSection={<IconCalendar size={18} />}
-                    valueFormat="MM/DD/YYYY HH:mm A"
-                    timePickerProps={{
-                      withDropdown: true,
-                      popoverProps: { withinPortal: false },
-                      format: '12h',
+                    disabled={mutation.isPending}
+                    onFocus={() => setIsFocused({
+                      'name': true,
+                      'datetime': false,
+                      'information': false
+                    })}
+                    onBlur={() => {
+                      setIsFocused({
+                        'name': false,
+                        'datetime': false,
+                        'information': false
+                      })
+                      field.handleBlur();
                     }}
-                    placeholder="Pick a date and time"
-                    required
-                    value={field.state.value && field.state.value !== '' ? new Date(field.state.value) : null}
-                    onBlur={field.handleBlur}
-                    onChange={(date) => field.handleChange(date ? dayjs(date).toISOString() : '')}
-                  />)
-
-                }}
-              />
-              <form.Field
-                name="timezone"
-              >
-                {(field) => (
-                  <Select
-                    label="Timezone"
-                    placeholder="Select your timezone"
-                    leftSection={<IconWorld size={18} />}
-                    required
-                    data={Intl.supportedValuesOf('timeZone')}
-                    searchable
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(val) => field.handleChange(val || '')}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    error={!isFocused['name']
+                      && field.state.meta.isDirty
+                      && !field.state.meta.isValid
+                      ? field.state.meta.errors[0]?.message
+                      : null}
                   />
-                )}
-              </form.Field>
+                )
+              }}
+            />
 
-              <form.Subscribe
-                selector={(state) => [state.canSubmit, state.isSubmitting]}
-              >
-                {([canSubmit, isSubmitting]) => (
-                  <Group justify="flex-end" mt="md">
-                    <Button
-                      type="submit"
-                      size="md"
-                      fullWidth
-                      loading={isSubmitting}
-                      disabled={!canSubmit}
-                    >
-                      Create
-                    </Button>
-                  </Group>
-                )}
-              </form.Subscribe>
-            </Stack>
-          </form>
-        </Stack>
+
+
+            <form.Field
+              name="datetime"
+              children={(field) => {
+                return (<DateTimePicker
+                  dropdownType="modal"
+                  label="Date & Time"
+                  required
+                  leftSection={<IconCalendar size={18} />}
+                  valueFormat="MM/DD/YYYY HH:mm A"
+                  timePickerProps={{
+                    withDropdown: true,
+                    popoverProps: { withinPortal: false },
+                    format: '12h',
+                  }}
+                  value={field.state.value}
+                  disabled={mutation.isPending}
+                  onFocus={() => {
+                    setIsFocused({
+                      'name': false,
+                      'datetime': true,
+                      'information': false
+                    })
+                  }}
+                  onBlur={() => {
+                    setIsFocused({
+                      'name': false,
+                      'datetime': false,
+                      'information': false
+                    })
+                    field.handleBlur();
+                  }}
+                  onChange={(date) => {
+                    field.handleChange(new Date(date!))
+                  }}
+                  error={!isFocused['datetime']
+                    && field.state.meta.isTouched
+                    && !field.state.meta.isValid
+                    ? field.state.meta.errors[0]?.message
+                    : null}
+                />)
+
+              }}
+            />
+
+
+            <form.Field
+              name="information"
+              children={(field) => {
+                return (
+                  <Textarea
+                    label="Information"
+                    placeholder={field.state.meta.isTouched ? undefined : 'Add any additional information here like an address, dish requirements, etc.'}
+                    value={field.state.value}
+                    disabled={mutation.isPending}
+                    onFocus={() => setIsFocused({
+                      'name': false,
+                      'information': true,
+                      'datetime': false
+                    })}
+                    onBlur={() => {
+                      setIsFocused({
+                        'name': false,
+                        'information': false,
+                        'datetime': false
+                      })
+                      field.handleBlur();
+                    }}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    error={!isFocused['information']
+                      && field.state.meta.isDirty
+                      && !field.state.meta.isValid
+                      ? field.state.meta.errors[0]?.message
+                      : null}
+                  />
+                )
+              }}
+            />
+
+
+            <form.Subscribe
+              selector={(state) => [state.canSubmit]}
+            >
+              {([canSubmit]) => (
+                <Group justify="flex-end" mt="md">
+                  <Button
+                    type="submit"
+                    size="md"
+                    fullWidth
+                    loading={mutation.isPending}
+                    disabled={!canSubmit}
+                  >
+                    Create
+                  </Button>
+                </Group>
+              )}
+            </form.Subscribe>
+          </Stack>
+
+        </form>
+
+
       </Paper>
     </Container>
   )

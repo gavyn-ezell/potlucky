@@ -13,7 +13,7 @@ class Dish(DishPayload):
 class PotluckPayload(BaseModel):
     name: str
     datetime: str
-    timezone: str
+    information: str | None
 
     
 class PotluckItem(PotluckPayload):
