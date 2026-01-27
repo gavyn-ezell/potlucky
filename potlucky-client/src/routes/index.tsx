@@ -20,14 +20,12 @@ const INFORMATION_MAX_LENGTH = 512
 interface PotluckFormEntry {
   name: string
   datetime: Date | null
-  timezone: string
   information: string | undefined
 }
 
 const defaultPotluckFormEntry: PotluckFormEntry = {
   name: '',
   datetime: null,
-  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
   information: ''
 }
 
@@ -36,7 +34,6 @@ const formSchema = z.object({
   datetime: z
     .date()
     .refine((val) => val && val > new Date(), 'Event must be in the future'),
-  timezone: z.string().refine((val) => Intl.supportedValuesOf('timeZone').includes(val), 'Invalid timezone'),
   information: z.string().max(INFORMATION_MAX_LENGTH, `Information must be at most ${INFORMATION_MAX_LENGTH} characters`)
 })
 
@@ -64,7 +61,6 @@ function MainPage() {
         const payload = {
           name: values.name,
           datetime: values.datetime ? dayjs(values.datetime).toISOString() : '',
-          timezone: values.timezone,
           information: values.information
         }
 
@@ -211,25 +207,6 @@ function MainPage() {
 
               }}
             />
-
-            <form.Field
-              name="timezone"
-            >
-              {(field) => (
-                <Select
-                  label="Timezone"
-                  placeholder="Select your timezone"
-                  leftSection={<IconWorld size={18} />}
-                  required
-                  data={Intl.supportedValuesOf('timeZone')}
-                  searchable
-                  value={field.state.value}
-                  disabled={mutation.isPending}
-                  onBlur={field.handleBlur}
-                  onChange={(val) => field.handleChange(val || '')}
-                />
-              )}
-            </form.Field>
 
 
             <form.Field
