@@ -4,7 +4,8 @@ from typing import Optional
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env", 
-        env_file_encoding="utf-8"
+        env_file_encoding="utf-8",
+        env_ignore_empty=True
     )
     aws_region: str
     aws_access_key: str
