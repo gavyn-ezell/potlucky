@@ -1,5 +1,7 @@
 # Potlucky - A simple potluck planning website 
 
+Check it our here: https://pot-lucky.vercel.app
+
 ## Stack Used
 
 - **Frontend**: Tanstack (Router, Query, Form), React, Vite, Mantine
