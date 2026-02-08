@@ -1,7 +1,9 @@
 import { Card, Container, createTheme, Paper, rem, Select } from "@mantine/core";
 import type { MantineColorsTuple, MantineThemeOverride } from "@mantine/core";
 
-const myColor: MantineColorsTuple = [
+// Mantine themes use a 10-color palette to support different variants and light/dark schemes.
+// https://help.mantine.dev/q/ten-shades-per-color#why-is-it-required-to-have-10-shades-per-color
+const primaryColor: MantineColorsTuple = [
   "#fff0e4",
   "#ffe0cf",
   "#fac0a1",
@@ -12,8 +14,9 @@ const myColor: MantineColorsTuple = [
   "#d6530c",
   "#bf4906",
   "#a73c00"
-]
+];
 
+// Configures the Container Component supported widths
 const CONTAINER_SIZES: Record<string, string> = {
   xxs: rem("200px"),
   xs: rem("300px"),
@@ -52,9 +55,9 @@ export const mantineTheme: MantineThemeOverride = createTheme({
     "6xl": rem("44px"),
   },
   colors: {
-    myColor
+    primaryColor,
   },
-  primaryColor: 'myColor',
+  primaryColor: 'primaryColor',
   components: {
     /** Put your mantine component override here */
     Container: Container.extend({
@@ -76,7 +79,6 @@ export const mantineTheme: MantineThemeOverride = createTheme({
         withBorder: true,
       },
     }),
-
     Card: Card.extend({
       defaultProps: {
         p: "xl",
