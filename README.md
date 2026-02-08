@@ -1,7 +1,6 @@
 # Potlucky - A simple potluck planning website 
-Potlucky is a 
 
-Check it out here: https://pot-lucky.vercel.app
+*Potlucky* makes organizing your next gathering with friends and family effortless. Create an event, build a list of items, and share a unique URL with your guests. They can easily contribute to the list, ensuring everyone brings something to the table. Start planning your potluck today by trying it out [here](https://pot-lucky.vercel.app)!
 
 ## Tech Stack
 
@@ -11,8 +10,8 @@ Check it out here: https://pot-lucky.vercel.app
 
 
 ## Prequisites
-- Node.js
-- Python
+- Node.js (latest)
+- Python (3.10.12 minimum)
 - An AWS Account
 
 ## Dev Setup
@@ -72,7 +71,12 @@ deactivate
 fastapi dev src/main.py
 ```
 
+You should see output logs that look like the image below. The server will provide an accessible link to view the available API endpoints via http://127.0.0.1:8000/docs
+
+![Fast API init logs](./images/fast-api-init-logs.png)
+
 ---
+
 
 ### Client Setup
 
@@ -91,7 +95,6 @@ npm install
 **3. Create a new `.env` using `.env.example` as reference**
 
 The `VITE_POTLUCKY_API_URL` should point to the FastAPI server running locally (e.g. `http://localhost:8000`)
-
 
 
 **4. Start the client application**
