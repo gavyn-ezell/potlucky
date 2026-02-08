@@ -44,7 +44,7 @@ function RouteComponent() {
             <CopyButton value={typeof window !== 'undefined' ? window.location.href : ''}>
                 {({ copy }) => (
                     <Button
-                        color="myColor"
+                        color="primaryColor"
                         onClick={() => {
                             copy()
                             notifications.show({
@@ -65,7 +65,7 @@ function RouteComponent() {
                     <Text
                         size="2xl"
                         fw={600}
-                        c="myColor"
+                        c="primaryColor"
                         ta="center"
                         style={{ lineHeight: 1.1 }}
                     >
@@ -82,7 +82,7 @@ function RouteComponent() {
                         align={{ base: 'flex-start', xs: 'center' }}
                     >
                         <Group>
-                            <ThemeIcon size="lg" variant="light" color="myColor" radius="md">
+                            <ThemeIcon size="lg" variant="light" color="primaryColor" radius="md">
                                 <IconCalendar size="1.2rem" />
                             </ThemeIcon>
                             <div>
@@ -91,7 +91,7 @@ function RouteComponent() {
                             </div>
                         </Group>
                         <Group>
-                            <ThemeIcon size="lg" variant="light" color="myColor" radius="md">
+                            <ThemeIcon size="lg" variant="light" color="primaryColor" radius="md">
                                 <IconClock size="1.2rem" />
                             </ThemeIcon>
                             <div>
@@ -116,13 +116,13 @@ function RouteComponent() {
                 <Group justify="space-between" align="center">
                     <Text
                         size="2xl"
-                        c="myColor"
+                        c="primaryColor"
                         ta="center"
                         style={{ lineHeight: 1.1 }}
                     >
                         Dishes
                     </Text>
-                    <Button onClick={open} color="myColor" variant="light" size="xs">
+                    <Button onClick={open} color="primaryColor" variant="light" size="xs">
                         <IconPlus size={14} />
                     </Button>
 
