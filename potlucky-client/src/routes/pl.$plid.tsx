@@ -1,13 +1,13 @@
 import { createFileRoute, redirect } from "@tanstack/react-router"
-import { Container, Text, Stack, Group, CopyButton, Button, Flex, Modal, Grid, Card, RingProgress, Table, Tabs, Accordion, UnstyledButton, Avatar, Tooltip, Spoiler, Skeleton, LoadingOverlay, Transition } from "@mantine/core"
+import { Container, Text, Stack, Group, CopyButton, Button, Flex, Modal, Grid, Card, RingProgress, Table, Tabs, Accordion, UnstyledButton, Avatar, Tooltip, Spoiler, Skeleton, LoadingOverlay, Transition, AvatarGroup, Image } from "@mantine/core"
 import { useDisclosure } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
 import { useQuery } from "@tanstack/react-query"
 import dayjs from "dayjs"
-import { IconCheck, IconUsers, IconTrash } from "@tabler/icons-react"
+import { IconCheck, IconUsers, IconTrash, IconArrowsDiagonalMinimize, IconEyeOff } from "@tabler/icons-react"
 import { DishForm } from "@/components/DishForm"
 import type { PotluckDataResponse } from "@/types/types"
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import "../styles.css";
 
 /**
@@ -59,11 +59,13 @@ function ExtractAttendees(data: PotluckDataResponse | undefined): string[] {
  * @returns 
  */
 function RouteComponent() {
+	const [attendeesExpanded, setAttendeesExpanded] = useState<boolean>(false);
+	const [viewableAttendees, setViewableAttendees] = useState<string[]>([]);
 	const { plid } = Route.useParams()
 	const [opened, { open, close }] = useDisclosure(false);
 	const [activeTab, setActiveTab] = useState<string | null>('1');
 
-	// TanStack Query to get potluck data
+		// TanStack Query to get potluck data
 	const { isLoading, data: potluck } = useQuery({
 		queryKey: ['potluck', plid], queryFn: async (): Promise<PotluckDataResponse> => {
 			const response = await fetch(`${import.meta.env.VITE_POTLUCKY_API_URL}/potluck/${plid}`)
@@ -72,8 +74,22 @@ function RouteComponent() {
 		retry: 3,
 	})
 
+
 	// Get all unique attendees
-	const attendeeNames = ExtractAttendees(potluck)
+	const attendeeNames = useMemo(()=>ExtractAttendees(potluck), [potluck]);
+	useEffect(() => {
+		setViewableAttendees(attendeeNames.slice(0, 8));
+	}, [attendeeNames]);
+
+	function showMoreAttendees() {
+		setAttendeesExpanded(true);
+		setViewableAttendees(attendeeNames);
+	}
+
+	function showLessAttendees() {
+		setAttendeesExpanded(false);
+		setViewableAttendees(attendeeNames.slice(0, 8));
+	}
 
 	return (
 		<>
@@ -87,7 +103,16 @@ function RouteComponent() {
 				{(transitionStyle) => (
 					<>
 						<Container size="xxl" mt={80}>
-							<Modal opened={opened} onClose={close} title="Add a Dish">
+
+							<Modal opened={opened} padding={0} onClose={close} title={<Text size="lg" fw="bold">Add a dish</Text>} bg="var(--bg-primary)">
+							<Group justify="center" w="100%">
+								<AvatarGroup>
+									<Avatar size="lg" style={{ justifyContent: "center", alignItems: "center" }}><Image alt="rice emoji" src="/public/rice.png" fit="cover" w="60%" /></Avatar>
+									<Avatar size="lg" style={{ justifyContent: "center", alignItems: "center", zIndex: 100 }}><Image alt="meat emoji" src="/public/meat.png" fit="cover" w="60%" /></Avatar>
+									<Avatar size="lg" style={{ justifyContent: "center", alignItems: "center"}}><Image alt="cake emoji" src="/public/cake.png" fit="cover" w="60%" /></Avatar>
+								</AvatarGroup>
+							</Group>
+							
 								<DishForm plid={plid} closeModal={close} />
 							</Modal>
 
@@ -123,18 +148,41 @@ function RouteComponent() {
 												</Accordion.Control>
 												<Accordion.Panel>
 													<Group>
-														{
-															attendeeNames.map((name) => (
-																<Tooltip
-																	withArrow
-																	label={name}
-																	bg="var(--bg-primary)"
-																	color="var(--text-light)"
-																>
-																	<Avatar key={name} name={name} color="initials" allowedInitialsColors={['blue', 'red', 'orange']} />
-																</Tooltip>
-															))
-														}
+														<>
+															{
+																viewableAttendees.map((name) => (
+																	<Tooltip
+																		withArrow
+																		label={name}
+																		bg="var(--bg-primary)"
+																		color="var(--text-light)"
+																	>
+																		<Avatar key={name} name={name} color="initials" allowedInitialsColors={['blue', 'red', 'orange']} />
+																	</Tooltip>
+																))}
+
+															{ // Toggle expanded or minmized view of attendees
+																attendeesExpanded ? 
+																	<UnstyledButton onClick={showLessAttendees}>
+																		<Avatar>
+																		<IconEyeOff size={16}/>
+
+																		</Avatar>
+																	</UnstyledButton>
+																:
+																	<Tooltip
+																		withArrow
+																		label={attendeeNames.slice(8, -1).join(", ")}
+																		bg="var(--bg-primary)"
+																		color="var(--text-light)"
+																	>
+																		<UnstyledButton onClick={(showMoreAttendees)}>
+																			<Avatar>+{attendeeNames.slice(8, -1).length}</Avatar>
+																		</UnstyledButton>
+																	</Tooltip>
+															}
+														
+														</>
 													</Group>
 												</Accordion.Panel>
 											</Accordion.Item>
@@ -199,36 +247,36 @@ function RouteComponent() {
 													</Table.Tr>
 												</Table.Thead>
 												<Table.Tbody>
-															{Object.keys(potluck?.dishes || {}).length > 0 ? (
-																Object.entries(potluck?.dishes || {})
-																	.sort(([, a], [, b]) => {
-																		const order = ['main', 'side', 'dessert', 'drinks', 'other'];
-																		const aIndex = order.indexOf(String(a.dish_category).toLowerCase());
-																		const bIndex = order.indexOf(String(b.dish_category)?.toLowerCase());
-																		return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
-																	})
-																	// Map a list of [key, value] pairs. Each key encodes a 
-																	// dish's unique uuid. The value is the Dish data itself.
-																	.map(([dishId, dish]) => (
-																		<Table.Tr key={dishId}>
-																			<Table.Td style={{ textAlign: "left", width: "33.33%" }} c="dimmed">{dish.attendee}</Table.Td>
-																			<Table.Td style={{ textAlign: "center", width: "33.33%" }} c="dimmed">{dish.dish}</Table.Td>
-																			<Table.Td style={{ textAlign: "right", width: "33.33%" }} c="dimmed">
-																				<UnstyledButton>
-																					<IconTrash size={16} />
-																				</UnstyledButton>
-																			</Table.Td>
-																		</Table.Tr>
-																	))
-															) : (
-																<Table.Tr>
-																	<Table.Td colSpan={3}>
-																		<Text c="dimmed" fs="italic" ta="center" size="sm">
-																			No dishes added yet. Be the first!
-																		</Text>
+													{Object.keys(potluck?.dishes || {}).length > 0 ? (
+														Object.entries(potluck?.dishes || {})
+															.sort(([, a], [, b]) => {
+																const order = ['main', 'side', 'dessert', 'drinks', 'other'];
+																const aIndex = order.indexOf(String(a.dish_category).toLowerCase());
+																const bIndex = order.indexOf(String(b.dish_category)?.toLowerCase());
+																return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
+															})
+															// Map a list of [key, value] pairs. Each key encodes a 
+															// dish's unique uuid. The value is the Dish data itself.
+															.map(([dishId, dish]) => (
+																<Table.Tr key={dishId}>
+																	<Table.Td style={{ textAlign: "left", width: "33.33%" }} c="dimmed">{dish.attendee}</Table.Td>
+																	<Table.Td style={{ textAlign: "center", width: "33.33%" }} c="dimmed">{dish.dish}</Table.Td>
+																	<Table.Td style={{ textAlign: "right", width: "33.33%" }} c="dimmed">
+																		<UnstyledButton>
+																			<IconTrash size={16} />
+																		</UnstyledButton>
 																	</Table.Td>
 																</Table.Tr>
-															)}
+															))
+													) : (
+														<Table.Tr>
+															<Table.Td colSpan={3}>
+																<Text c="dimmed" fs="italic" ta="center" size="sm">
+																	No dishes added yet. Be the first!
+																</Text>
+															</Table.Td>
+														</Table.Tr>
+													)}
 												</Table.Tbody>
 											</Table>
 										</Card>

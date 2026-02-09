@@ -162,6 +162,17 @@ export const mantineTheme: MantineThemeOverride = createTheme({
     Select: Select.extend({
       defaultProps: {
         checkIconPosition: "right",
+        radius: "sm"
+      },
+      styles: {
+        input: {
+          background: "var(--bg-input-dark)",
+          border: "2px solid var(--border-primary)",
+        },
+        dropdown: {
+          borderRadius: "4px",
+          border: "2px solid var(--border-primary)",
+        }
       },
     }),
     Button: Button.extend({
@@ -204,11 +215,17 @@ export const mantineTheme: MantineThemeOverride = createTheme({
     }),
     Modal: Modal.extend({
       defaultProps: {
-        radius: "sm"
+        radius: "md"
       },
       styles: {
+        title: {
+          padding: "0px"
+        },
+        header: {
+          background: "var(--bg-primary)",
+        },
         body: {
-          background: "var(--bg-input-dark)",
+          background: "var(--bg-primary)",
           // border: "2px solid var(--border-primary)",
         },
       },
