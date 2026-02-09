@@ -2,7 +2,7 @@ import { StrictMode } from 'react'
 import ReactDOM from 'react-dom/client'
 import { RouterProvider, createRouter } from '@tanstack/react-router'
 import { MantineProvider } from '@mantine/core';
-import { mantineTheme } from './theme.ts';
+import { cssVarResolver, mantineTheme } from './theme.ts';
 
 // Import the generated route tree
 import { routeTree } from './routeTree.gen'
@@ -44,7 +44,7 @@ if (rootElement && !rootElement.innerHTML) {
   root.render(
     <StrictMode>
       <QueryClientProvider client={queryClient}>
-        <MantineProvider theme={mantineTheme} defaultColorScheme="dark">
+        <MantineProvider theme={mantineTheme} cssVariablesResolver={cssVarResolver} defaultColorScheme="dark">
           <Notifications position="top-center" />
           <RouterProvider router={router} />
         </MantineProvider>
