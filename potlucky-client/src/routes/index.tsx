@@ -8,18 +8,13 @@ import dayjs from 'dayjs'
 import { z } from 'zod'
 import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
+import type { PotluckFormEntry } from '@/types/types'
 
 export const Route = createFileRoute('/')({
   component: MainPage,
 })
 
 const INFORMATION_MAX_LENGTH = 512
-
-interface PotluckFormEntry {
-  name: string
-  datetime: Date | null
-  information: string | undefined
-}
 
 const defaultPotluckFormEntry: PotluckFormEntry = {
   name: '',
@@ -75,7 +70,6 @@ function MainPage() {
         }
 
         return response.json()
-
       }
       catch (error) {
         throw error
@@ -258,10 +252,7 @@ function MainPage() {
               )}
             </form.Subscribe>
           </Stack>
-
         </form>
-
-
       </Paper>
     </Container>
   )

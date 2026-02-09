@@ -1,5 +1,5 @@
 import { createFileRoute, redirect } from "@tanstack/react-router"
-import { Container, Text, Stack, Group, CopyButton, Button, Flex, Modal, Grid, Card, RingProgress,  Table, Tabs, Accordion, UnstyledButton, Avatar, Tooltip, Spoiler, Skeleton,LoadingOverlay, Transition } from "@mantine/core"
+import { Container, Text, Stack, Group, CopyButton, Button, Flex, Modal, Grid, Card, RingProgress, Table, Tabs, Accordion, UnstyledButton, Avatar, Tooltip, Spoiler, Skeleton, LoadingOverlay, Transition } from "@mantine/core"
 import { useDisclosure } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
 import { useQuery } from "@tanstack/react-query"
@@ -29,7 +29,13 @@ export const Route = createFileRoute('/pl/$plid')({
 	component: RouteComponent,
 })
 
-function ExtractNames(data: PotluckDataResponse | undefined): string[] {
+/**
+ * ExtractAttendees parses a list of potluck dishes and returns an array
+ * of unique attendee names. If the potluck data is undefined, the method
+ * returns an empty array.
+ * @param data 
+ */
+function ExtractAttendees(data: PotluckDataResponse | undefined): string[] {
 	var uniqueAttendees = new Set<string>();
 	if (data == undefined) {
 		return [];
@@ -57,7 +63,7 @@ function RouteComponent() {
 	const [opened, { open, close }] = useDisclosure(false);
 	const [activeTab, setActiveTab] = useState<string | null>('1');
 
-	// TanStack Query
+	// TanStack Query to get potluck data
 	const { isLoading, data: potluck } = useQuery({
 		queryKey: ['potluck', plid], queryFn: async (): Promise<PotluckDataResponse> => {
 			const response = await fetch(`${import.meta.env.VITE_POTLUCKY_API_URL}/potluck/${plid}`)
@@ -66,7 +72,8 @@ function RouteComponent() {
 		retry: 3,
 	})
 
-	const attendeeNames = ExtractNames(potluck)
+	// Get all unique attendees
+	const attendeeNames = ExtractAttendees(potluck)
 
 	return (
 		<>
@@ -79,206 +86,193 @@ function RouteComponent() {
 			>
 				{(transitionStyle) => (
 					<>
-					<Container size="xxl" mt={80}>
-						<Modal opened={opened} onClose={close} title="Add a Dish">
-							<DishForm plid={plid} closeModal={close} />
-						</Modal>
+						<Container size="xxl" mt={80}>
+							<Modal opened={opened} onClose={close} title="Add a Dish">
+								<DishForm plid={plid} closeModal={close} />
+							</Modal>
 
-						<Grid
-							justify="center"    // Centers the grid horizontally
-							gutter="lg"         // Adds spacing between grid columns
-							style={{ width: "100%", margin: "auto" }} // Ensures the grid spans the full width 
-						>
-							<Grid.Col span={3}>
-								<Stack>
-									<Card withBorder>
-										<Card.Section inheritPadding py="md"  style={transitionStyle}>
-											<Text fw="bold" size="xl">{potluck?.name}</Text>
-											<Group justify="space-between"  style={transitionStyle}>
-												<Text size="xs" c="var(--orange-primary)">
-													{dayjs(potluck?.datetime).format('MMM D, YYYY')} |  {dayjs(potluck?.datetime).format('h:mm A')}
-												</Text>
+							<Grid
+								justify="center"    // Centers the grid horizontally
+								gutter="lg"         // Adds spacing between grid columns
+								style={{ width: "100%", margin: "auto" }} // Ensures the grid spans the full width 
+							>
+								<Grid.Col span={3}>
+									<Stack>
+										<Card withBorder>
+											<Card.Section inheritPadding py="md" style={transitionStyle}>
+												<Text fw="bold" size="xl">{potluck?.name}</Text>
+												<Group justify="space-between" style={transitionStyle}>
+													<Text size="xs" c="var(--orange-primary)">
+														{dayjs(potluck?.datetime).format('MMM D, YYYY')} |  {dayjs(potluck?.datetime).format('h:mm A')}
+													</Text>
+												</Group>
+
+											</Card.Section>
+
+											<Spoiler maxHeight={72} showLabel={<Text mt="sm" size="sm">view more</Text>} hideLabel={<Text mt="sm" size="sm">hide</Text>} style={transitionStyle}>
+												<Text mt="sm" c="dimmed" size="sm">{potluck?.information}</Text>
+											</Spoiler>
+										</Card>
+
+										<Accordion variant="filled" radius="md" bd="2px solid var(--border-primary)" bdrs="md">
+											<Accordion.Item value="photos" style={transitionStyle}>
+												<Accordion.Control
+													icon={<IconUsers size={22} stroke={1.5} color="var(--mantine-color-dimmed)" />}
+												>
+													{attendeeNames.length} people joined this event
+												</Accordion.Control>
+												<Accordion.Panel>
+													<Group>
+														{
+															attendeeNames.map((name) => (
+																<Tooltip
+																	withArrow
+																	label={name}
+																	bg="var(--bg-primary)"
+																	color="var(--text-light)"
+																>
+																	<Avatar key={name} name={name} color="initials" allowedInitialsColors={['blue', 'red', 'orange']} />
+																</Tooltip>
+															))
+														}
+													</Group>
+												</Accordion.Panel>
+											</Accordion.Item>
+										</Accordion>
+									</Stack>
+								</Grid.Col>
+
+								<Grid.Col span={5}>
+									<Stack>
+										<Group align="center" justify="space-between">
+											<Tabs variant="pills" defaultValue="1" value={activeTab} onChange={setActiveTab} py={3} px="sm">
+												<Tabs.List justify="space-between">
+													<Tabs.Tab value="1" color="var(--bg-input-dark)" >
+														Main
+													</Tabs.Tab>
+													<Tabs.Tab value="2" color="var(--bg-input-dark)">
+														Sides
+													</Tabs.Tab>
+													<Tabs.Tab value="3" color="var(--bg-input-dark)">
+														Drinks
+													</Tabs.Tab>
+													<Tabs.Tab value="4" color="var(--bg-input-dark)">
+														Desserts
+													</Tabs.Tab>
+													<Tabs.Tab value="5" color="var(--bg-input-dark)">
+														Other
+													</Tabs.Tab>
+												</Tabs.List>
+											</Tabs>
+
+											<Group>
+												<CopyButton value={typeof window !== 'undefined' ? window.location.href : ''}>
+													{({ copy }) => (
+														<Button
+															color="primaryColor"
+															onClick={() => {
+																copy()
+																notifications.show({
+																	radius: "md",
+																	color: "var(--success",
+																	title: 'Link copied!',
+																	message: 'Share this link with your friends to plan dishes!',
+																	icon: <IconCheck size={16} />,
+																})
+															}}
+														>
+															Share
+														</Button>
+													)}
+												</CopyButton>
+												<Button onClick={open} color="var(--bg-input-dark)" bd="2px solid var(--border-primary)">Add</Button>
 											</Group>
+										</Group>
 
+										<Card withBorder radius="md" p={0}>
+											<Table striped style={transitionStyle}>
+												<Table.Thead>
+													<Table.Tr>
+														<Table.Th style={{ textAlign: "left" }}>Name</Table.Th>
+														<Table.Th style={{ textAlign: "center" }}>Item</Table.Th>
+														<Table.Th style={{ textAlign: "right" }}>Action</Table.Th>
+													</Table.Tr>
+												</Table.Thead>
+												<Table.Tbody>
+															{Object.keys(potluck?.dishes || {}).length > 0 ? (
+																Object.entries(potluck?.dishes || {})
+																	.sort(([, a], [, b]) => {
+																		const order = ['main', 'side', 'dessert', 'drinks', 'other'];
+																		const aIndex = order.indexOf(String(a.dish_category).toLowerCase());
+																		const bIndex = order.indexOf(String(b.dish_category)?.toLowerCase());
+																		return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
+																	})
+																	// Map a list of [key, value] pairs. Each key encodes a 
+																	// dish's unique uuid. The value is the Dish data itself.
+																	.map(([dishId, dish]) => (
+																		<Table.Tr key={dishId}>
+																			<Table.Td style={{ textAlign: "left", width: "33.33%" }} c="dimmed">{dish.attendee}</Table.Td>
+																			<Table.Td style={{ textAlign: "center", width: "33.33%" }} c="dimmed">{dish.dish}</Table.Td>
+																			<Table.Td style={{ textAlign: "right", width: "33.33%" }} c="dimmed">
+																				<UnstyledButton>
+																					<IconTrash size={16} />
+																				</UnstyledButton>
+																			</Table.Td>
+																		</Table.Tr>
+																	))
+															) : (
+																<Table.Tr>
+																	<Table.Td colSpan={3}>
+																		<Text c="dimmed" fs="italic" ta="center" size="sm">
+																			No dishes added yet. Be the first!
+																		</Text>
+																	</Table.Td>
+																</Table.Tr>
+															)}
+												</Table.Tbody>
+											</Table>
+										</Card>
+										<Flex justify="end"><Text>x main items</Text></Flex>
+									</Stack>
+								</Grid.Col>
+
+								<Grid.Col span={3}>
+									<Card withBorder>
+										<Card.Section withBorder inheritPadding py="md">
+											<Group justify="space-between">
+												<Text fw="bold" size="xl">Checklist</Text>
+												<Button color="var(--bg-input-dark)">view</Button>
+											</Group>
 										</Card.Section>
 
-										<Spoiler maxHeight={72} showLabel={<Text mt="sm" size="sm">view more</Text>} hideLabel={<Text mt="sm" size="sm">hide</Text>}  style={transitionStyle}>
-											<Text mt="sm" c="dimmed" size="sm">{potluck?.information}</Text>
-										</Spoiler>
+										<Text mt="sm" c="dimmed" size="sm">
+											To help keep track of what else needs to be brought, use this checklist as a reference.
+										</Text>
+
+										<Card.Section inheritPadding mt="xl" pb="md" style={transitionStyle}>
+											<Flex align="end" justify="space-between">
+												<Stack gap={0}>
+													<Flex align="end">
+														<Text size="xl" fw="bolder">6</Text>
+														<Text c="dimmed">/12</Text>
+													</Flex>
+													<Text>completed</Text>
+												</Stack>
+
+												<RingProgress
+													roundCaps
+													size={96}
+													thickness={10}
+													transitionDuration={250}
+													sections={[{ value: 50, color: "primaryColor" }]}>
+												</RingProgress>
+											</Flex>
+										</Card.Section>
 									</Card>
-
-									<Accordion variant="filled" radius="md" bd="2px solid var(--border-primary)" bdrs="md">
-										<Accordion.Item value="photos" style={transitionStyle}>
-											<Accordion.Control
-												icon={<IconUsers size={22} stroke={1.5} color="var(--mantine-color-dimmed)" />}
-											>
-												{attendeeNames.length} people joined this event
-											</Accordion.Control>
-											<Accordion.Panel>
-												<Group>
-													{
-														attendeeNames.map((name) => (
-															<Tooltip
-																withArrow
-																label={name}
-																bg="var(--bg-primary)"
-																color="var(--text-light)"
-															>
-																<Avatar key={name} name={name} color="initials" allowedInitialsColors={['blue', 'red', 'orange']} />
-															</Tooltip>
-														))
-													}
-												</Group>
-											</Accordion.Panel>
-										</Accordion.Item>
-									</Accordion>
-								</Stack>
-							</Grid.Col>
-
-							<Grid.Col span={5}>
-								<Stack>
-									<Group align="center" justify="space-between">
-										<Tabs variant="pills" defaultValue="1" value={activeTab} onChange={setActiveTab} py={3} px="sm">
-											<Tabs.List justify="space-between">
-												<Tabs.Tab value="1" color="var(--bg-input-dark)" >
-													Main
-												</Tabs.Tab>
-												<Tabs.Tab value="2" color="var(--bg-input-dark)">
-													Sides
-												</Tabs.Tab>
-												<Tabs.Tab value="3" color="var(--bg-input-dark)">
-													Drinks
-												</Tabs.Tab>
-												<Tabs.Tab value="4" color="var(--bg-input-dark)">
-													Desserts
-												</Tabs.Tab>
-												<Tabs.Tab value="5" color="var(--bg-input-dark)">
-													Other
-												</Tabs.Tab>
-											</Tabs.List>
-										</Tabs>
-
-										<Group>
-											<CopyButton value={typeof window !== 'undefined' ? window.location.href : ''}>
-												{({ copy }) => (
-													<Button
-														color="primaryColor"
-														onClick={() => {
-															copy()
-															notifications.show({
-																radius: "md",
-																color: "var(--success",
-																title: 'Link copied!',
-																message: 'Share this link with your friends to plan dishes!',
-																icon: <IconCheck size={16} />,
-															})
-														}}
-													>
-														Share
-													</Button>
-												)}
-											</CopyButton>
-											<Button onClick={open} color="var(--bg-input-dark)" bd="2px solid var(--border-primary)">Add</Button>
-										</Group>
-									</Group>
-
-									<Card withBorder radius="md" p={0}>
-										<Table striped style={transitionStyle}>
-											<Table.Thead>
-												<Table.Tr>
-													<Table.Th style={{ textAlign: "left" }}>Name</Table.Th>
-													<Table.Th style={{ textAlign: "center" }}>Item</Table.Th>
-													<Table.Th style={{ textAlign: "right" }}>Action</Table.Th>
-												</Table.Tr>
-											</Table.Thead>
-											<Table.Tbody>
-												{isLoading &&
-													<Skeleton visible={isLoading} w="100%">
-														<Text c="dimmed">loading...</Text>
-													</Skeleton>
-												}
-
-												{!isLoading &&
-													<>
-														{Object.keys(potluck?.dishes || {}).length > 0 ? (
-															Object.entries(potluck?.dishes || {})
-																.sort(([, a], [, b]) => {
-																	const order = ['main', 'side', 'dessert', 'drinks', 'other'];
-																	const aIndex = order.indexOf(String(a.dish_category).toLowerCase());
-																	const bIndex = order.indexOf(String(b.dish_category)?.toLowerCase());
-																	return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
-																})
-																// Map a list of [key, value] pairs. Each key encodes a 
-																// dish's unique uuid. The value is the Dish data itself.
-																.map(([dishId, dish]) => (
-																	<Table.Tr key={dishId}>
-																		<Table.Td style={{ textAlign: "left", width: "33.33%" }} c="dimmed">{dish.attendee}</Table.Td>
-																		<Table.Td style={{ textAlign: "center", width: "33.33%" }} c="dimmed">{dish.dish}</Table.Td>
-																		<Table.Td style={{ textAlign: "right", width: "33.33%" }} c="dimmed">
-																			<UnstyledButton>
-																				<IconTrash size={16} />
-																			</UnstyledButton>
-																		</Table.Td>
-																	</Table.Tr>
-																))
-														) : (
-															<Table.Tr>
-																<Table.Td colSpan={3}>
-																	<Text c="dimmed" fs="italic" ta="center" size="sm">
-																		No dishes added yet. Be the first!
-																	</Text>
-																</Table.Td>
-															</Table.Tr>
-														)}
-													</>
-												}
-											</Table.Tbody>
-										</Table>
-
-									</Card>
-
-									<Flex justify="end"><Text>x main items</Text></Flex>
-								</Stack>
-							</Grid.Col>
-
-							<Grid.Col span={3}>
-								<Card withBorder>
-									<Card.Section withBorder inheritPadding py="md">
-										<Group justify="space-between">
-											<Text fw="bold" size="xl">Checklist</Text>
-											<Button color="var(--bg-input-dark)">view</Button>
-										</Group>
-									</Card.Section>
-
-									<Text mt="sm" c="dimmed" size="sm">
-										To help keep track of what else needs to be brought, use this checklist as a reference.
-									</Text>
-
-									<Card.Section inheritPadding mt="xl" pb="md" style={transitionStyle}>
-										<Flex align="end" justify="space-between">
-											<Stack gap={0}>
-												<Flex align="end">
-													<Text size="xl" fw="bolder">6</Text>
-													<Text c="dimmed">/12</Text>
-												</Flex>
-												<Text>completed</Text>
-											</Stack>
-
-											<RingProgress
-												roundCaps
-												size={96}
-												thickness={10}
-												transitionDuration={250}
-												sections={[{ value: 50, color: "primaryColor" }]}>
-											</RingProgress>
-										</Flex>
-									</Card.Section>
-								</Card>
-							</Grid.Col>
-						</Grid>
-					</Container>
+								</Grid.Col>
+							</Grid>
+						</Container>
 					</>
-
 				)}
 			</Transition>
 		</>

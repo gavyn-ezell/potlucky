@@ -24,3 +24,8 @@ export enum Category {
   Other = 'other',
 };
 
+export interface PotluckFormEntry {
+  name: string
+  datetime: Date | null
+  information: string | undefined
+}
