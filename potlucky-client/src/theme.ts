@@ -1,4 +1,4 @@
-import { Button, Card, Container, createTheme, Input, InputWrapper, Paper, rem, Select, Textarea } from "@mantine/core";
+import { Accordion, Button, Card, Container, createTheme, Input, InputWrapper, Modal, Paper, rem, Select, Table, Tabs, Text, Textarea } from "@mantine/core";
 import type { CSSVariablesResolver, MantineColorsTuple, MantineThemeOverride, TextInput } from "@mantine/core";
 import "../src/styles.css";
 import { DateTimePicker } from "@mantine/dates";
@@ -44,6 +44,7 @@ export const cssVarResolver: CSSVariablesResolver = () => ({
 
 export const mantineTheme: MantineThemeOverride = createTheme({
   /** Put your mantine theme override here */
+  fontFamily: 'Geist, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif',
   breakpoints: {
     xs: '30em',
     sm: '48em',
@@ -86,6 +87,40 @@ export const mantineTheme: MantineThemeOverride = createTheme({
 
   /** Put your mantine component prop/style overrides here */
   components: {
+    Accordion: Accordion.extend({
+      defaultProps: {
+        radius: "md"
+      },
+      styles: {
+        root: {
+          background: "var(--bg-primary)",
+        }
+      }
+    }),
+    Table: Table.extend({
+      defaultProps: {
+        striped: true,
+      },
+      styles: {
+        table: {
+          "tbody tr:nth-of-type(odd)": {
+            backgroundColor: "white",
+          },
+          "tbody tr:nth-of-type(even)": {
+            backgroundColor: "transparent",
+          },
+        },
+      },
+    }),
+    Tabs: Tabs.extend({
+      styles: {
+        root: {
+          background: "var(--bg-primary)",
+          border: "2px solid var(--border-primary)",
+          borderRadius: "8px"
+        },
+      }
+    }),
     Container: Container.extend({
       vars: (_, { size, fluid }) => ({
         root: {
@@ -105,6 +140,11 @@ export const mantineTheme: MantineThemeOverride = createTheme({
         withBorder: true,
         bd: "2px solid var(--border-primary)",
       },
+      styles: {
+        root: {
+          background: "var(--bg-primary)",
+        }
+      }
     }),
     Card: Card.extend({
       defaultProps: {
@@ -113,18 +153,23 @@ export const mantineTheme: MantineThemeOverride = createTheme({
         radius: "lg",
         withBorder: true,
       },
+      styles: {
+        root: {
+          background: "var(--bg-primary)",
+        },
+      },
     }),
     Select: Select.extend({
       defaultProps: {
         checkIconPosition: "right",
       },
-    }), 
+    }),
     Button: Button.extend({
       defaultProps: {
-        radius: "sm"
+        radius: "md"
       },
     }),
-   TextInput: Input.extend({
+    TextInput: Input.extend({
       defaultProps: {
         radius: "sm",
       },
@@ -147,7 +192,7 @@ export const mantineTheme: MantineThemeOverride = createTheme({
       },
     }),
     DateTimePicker: DateTimePicker.extend({
-       defaultProps: {
+      defaultProps: {
         radius: "sm"
       },
       styles: {
@@ -156,7 +201,18 @@ export const mantineTheme: MantineThemeOverride = createTheme({
           border: "2px solid var(--border-primary)",
         },
       },
-    })
+    }),
+    Modal: Modal.extend({
+      defaultProps: {
+        radius: "sm"
+      },
+      styles: {
+        body: {
+          background: "var(--bg-input-dark)",
+          // border: "2px solid var(--border-primary)",
+        },
+      },
+    }),
   },
   other: {
     style: "mantine",

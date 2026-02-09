@@ -1,12 +1,7 @@
+import { type Dish } from "@/types/types"
 import { Paper, Group, Stack, Text } from "@mantine/core"
 
-interface DishCardProps {
-    dish: string
-    attendee: string
-    category: string
-}
-
-const CATEGORY_CONFIG: Record<string, { color: string; emoji: string }> = {
+export const CATEGORY_CONFIG: Record<string, { color: string; emoji: string }> = {
     main: { color: 'orange', emoji: '🍖' },
     side: { color: 'teal', emoji: '🍚' },
     dessert: { color: 'pink', emoji: '🍰' },
@@ -14,8 +9,16 @@ const CATEGORY_CONFIG: Record<string, { color: string; emoji: string }> = {
     other: { color: 'gray', emoji: '🍽️' }
 }
 
-export function DishCard({ dish, attendee, category }: DishCardProps) {
-    const config = CATEGORY_CONFIG[category.toLowerCase()] || CATEGORY_CONFIG.other
+
+/**
+ * DishRow represents an entry in a dish table view. It displays a dish's 
+ * name, attendee, and category. Dishes can be deleted only by the attendee
+ * who create it.
+ * @param param0 
+ * @returns 
+ */
+export function DishRow({ dish, attendee, dish_category }: Dish) {
+    const config = CATEGORY_CONFIG[dish_category.toLowerCase()] || CATEGORY_CONFIG.other
 
     return (
         <Paper
@@ -55,7 +58,7 @@ export function DishCard({ dish, attendee, category }: DishCardProps) {
                         tt="uppercase"
                         c={config.color}
                     >
-                        {category} {config.emoji}
+                        {dish_category} {config.emoji}
                     </Text>
                 </Paper>
             </Group>

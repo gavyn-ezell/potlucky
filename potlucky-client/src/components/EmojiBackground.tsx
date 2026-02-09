@@ -65,6 +65,7 @@ export function EmojiBackground({ children }: { children: ReactNode }) {
                 h="100%"
                 style={{
                     backgroundImage,
+                    backgroundColor: "var(--bg-app)",
                     backgroundRepeat: 'repeat',
                     backgroundSize: `${tileSize}px ${tileSize}px`,
                     backgroundPosition: '0 0',
