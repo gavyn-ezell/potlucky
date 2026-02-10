@@ -48,10 +48,7 @@ const formSchema = z.object({
       INFORMATION_MAX_LENGTH,
       `Information must be at most ${INFORMATION_MAX_LENGTH} characters`,
     ),
-  requirements: z.partialRecord(
-    z.enum(["main", "side", "dessert", "drinks", "other"]),
-    z.number(),
-  ),
+  requirements: z.partialRecord(z.enum(Category), z.number()),
 });
 
 const formOpts = formOptions({
