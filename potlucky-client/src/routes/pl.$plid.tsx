@@ -1,165 +1,328 @@
 import { createFileRoute, redirect } from "@tanstack/react-router"
-import { Container, Text, Paper, Stack, Divider, Group, ThemeIcon, CopyButton, Button, Flex, Modal } from "@mantine/core"
+import { Container, Text, Stack, Group, CopyButton, Button, Flex, Modal, Grid, Card, RingProgress, Table, Tabs, Accordion, UnstyledButton, Avatar, Tooltip, Spoiler, Skeleton, LoadingOverlay, Transition, AvatarGroup, Image } from "@mantine/core"
 import { useDisclosure } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
 import { useQuery } from "@tanstack/react-query"
 import dayjs from "dayjs"
-import { IconCalendar, IconClock, IconShare, IconCheck, IconPlus } from "@tabler/icons-react"
+import { IconCheck, IconUsers, IconTrash, IconArrowsDiagonalMinimize, IconEyeOff } from "@tabler/icons-react"
 import { DishForm } from "@/components/DishForm"
-import { DishCard } from "@/components/DishCard"
+import type { PotluckDataResponse } from "@/types/types"
+import { useEffect, useMemo, useState } from "react"
+import "../styles.css";
 
+/**
+ * createFileRoute fetches the data from the API before the route 
+ * component is rendered as a sanity check. If the request is not 
+ * successful, the user is redirected back to the home page.
+ */
 export const Route = createFileRoute('/pl/$plid')({
-    beforeLoad: async ({ params }) => {
-        const { plid } = params
-        const response = await fetch(`${import.meta.env.VITE_POTLUCKY_API_URL}/potluck/${plid}`)
-        if (!response.ok) {
-            console.log('not ok')
-            throw redirect({
-                to: '/',
-            })
-        }
-    },
-    component: RouteComponent,
+	beforeLoad: async ({ params }) => {
+		const { plid } = params
+		const response = await fetch(`${import.meta.env.VITE_POTLUCKY_API_URL}/potluck/${plid}`)
+		if (!response.ok) {
+			console.log('not ok')
+			throw redirect({
+				to: '/',
+			})
+		}
+	},
+	component: RouteComponent,
 })
 
+/**
+ * ExtractAttendees parses a list of potluck dishes and returns an array
+ * of unique attendee names. If the potluck data is undefined, the method
+ * returns an empty array.
+ * @param data 
+ */
+function ExtractAttendees(data: PotluckDataResponse | undefined): string[] {
+	var uniqueAttendees = new Set<string>();
+	if (data == undefined) {
+		return [];
+	}
+
+	var uniqueAttendees = new Set<string>();
+	Object.values(data.dishes).forEach((dish) => {
+		uniqueAttendees.add(dish.attendee);
+	})
+
+	return Array.from(uniqueAttendees);
+}
+
+/**
+ * RouteComponent contains the user interface for displaying and mutating
+ * potluck information. It uses a TanStack Query that automatically fetches the 
+ * potluck data when the component is mounted. A caching mechanism is built-in
+ * so that subsequent requests for the same data are pulled from a cache instead
+ * of the API endpoint. If the route parameter changes, or the query key is invalidated,
+ * or the cache becomes stale, the component will make a new request to the API.
+ * @returns 
+ */
 function RouteComponent() {
-    const { plid } = Route.useParams()
-    const [opened, { open, close }] = useDisclosure(false);
+	const [attendeesExpanded, setAttendeesExpanded] = useState<boolean>(false);
+	const [viewableAttendees, setViewableAttendees] = useState<string[]>([]);
+	const { plid } = Route.useParams()
+	const [opened, { open, close }] = useDisclosure(false);
+	const [activeTab, setActiveTab] = useState<string | null>('1');
 
-    const potluck = useQuery({
-        queryKey: ['potluck', plid], queryFn: async () => {
-            const response = await fetch(`${import.meta.env.VITE_POTLUCKY_API_URL}/potluck/${plid}`)
-            return await response.json()
-        },
-        retry: 3,
-    })
-    return (
-        <Container py="4xl" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: '1.4rem' }}>
-            <Modal opened={opened} onClose={close} title="Add a Dish">
-                {/* Modal content will go here */}
-                {/* <Text>Form to add a dish will be here.</Text>
-                 */}
-                <DishForm plid={plid} closeModal={close} />
-            </Modal>
-            <CopyButton value={typeof window !== 'undefined' ? window.location.href : ''}>
-                {({ copy }) => (
-                    <Button
-                        color="primaryColor"
-                        onClick={() => {
-                            copy()
-                            notifications.show({
-                                title: 'Link copied!',
-                                message: 'Share this link with your friends to plan dishes!',
-                                color: 'teal',
-                                icon: <IconCheck size={16} />,
-                            })
-                        }}
-                        leftSection={<IconShare size={16} />}
-                    >
-                        Share Potluck
-                    </Button>
-                )}
-            </CopyButton>
-            <Paper w="24rem">
-                <Stack gap="xl" align="center">
-                    <Text
-                        size="2xl"
-                        fw={600}
-                        c="primaryColor"
-                        ta="center"
-                        style={{ lineHeight: 1.1 }}
-                    >
-                        {potluck.data?.name}
-                    </Text>
-
-                    <Divider w="100%" label={<IconCalendar size={16} />} labelPosition="center" />
+		// TanStack Query to get potluck data
+	const { isLoading, data: potluck } = useQuery({
+		queryKey: ['potluck', plid], queryFn: async (): Promise<PotluckDataResponse> => {
+			const response = await fetch(`${import.meta.env.VITE_POTLUCKY_API_URL}/potluck/${plid}`)
+			return await response.json()
+		},
+		retry: 3,
+	})
 
 
-                    <Flex
-                        direction={{ base: 'column', xs: 'row' }}
-                        gap={{ base: 'md', xs: 'xl' }}
-                        justify="flex-start"
-                        align={{ base: 'flex-start', xs: 'center' }}
-                    >
-                        <Group>
-                            <ThemeIcon size="lg" variant="light" color="primaryColor" radius="md">
-                                <IconCalendar size="1.2rem" />
-                            </ThemeIcon>
-                            <div>
-                                <Text size="xs" c="dimmed" fw={700} tt="uppercase">Date</Text>
-                                <Text fw={500}>{dayjs(potluck.data?.datetime).format('MMMM D, YYYY')}</Text>
-                            </div>
-                        </Group>
-                        <Group>
-                            <ThemeIcon size="lg" variant="light" color="primaryColor" radius="md">
-                                <IconClock size="1.2rem" />
-                            </ThemeIcon>
-                            <div>
-                                <Text size="xs" c="dimmed" fw={700} tt="uppercase">Time</Text>
-                                <Text fw={500}>{dayjs(potluck.data?.datetime).format('h:mm A')}</Text>
-                            </div>
-                        </Group>
-                    </Flex>
+	// Get all unique attendees
+	const attendeeNames = useMemo(()=>ExtractAttendees(potluck), [potluck]);
+	useEffect(() => {
+		setViewableAttendees(attendeeNames.slice(0, 8));
+	}, [attendeeNames]);
 
-                    <>
-                        <Divider w="100%" my="sm" label="Information" labelPosition="center" />
-                        <Container size="sm" p={0}>
-                            <Text ta="center" style={{ whiteSpace: 'pre-wrap' }}>
-                                {potluck.data?.information || "No additional information"}
-                            </Text>
-                        </Container>
-                    </>
-                </Stack>
-            </Paper>
+	function showMoreAttendees() {
+		setAttendeesExpanded(true);
+		setViewableAttendees(attendeeNames);
+	}
 
-            <Paper w="22rem">
-                <Group justify="space-between" align="center">
-                    <Text
-                        size="2xl"
-                        c="primaryColor"
-                        ta="center"
-                        style={{ lineHeight: 1.1 }}
-                    >
-                        Dishes
-                    </Text>
-                    <Button onClick={open} color="primaryColor" variant="light" size="xs">
-                        <IconPlus size={14} />
-                    </Button>
+	function showLessAttendees() {
+		setAttendeesExpanded(false);
+		setViewableAttendees(attendeeNames.slice(0, 8));
+	}
 
-                </Group>
-                <Divider w="100%" my="sm" labelPosition="center" />
-                {Object.keys(potluck.data?.dishes || {}).length > 0 ? (
-                    <Stack
-                        gap="sm"
-                        style={{
-                            maxHeight: '400px',
-                            overflowY: 'auto',
-                            paddingRight: '0.5rem',
-                            scrollbarWidth: 'thin',
-                            scrollbarColor: 'rgba(255, 255, 255, 0.3) transparent'
-                        }}
-                    >
-                        {Object.entries(potluck.data?.dishes || {})
-                            .sort(([, a]: [string, any], [, b]: [string, any]) => {
-                                const order = ['main', 'side', 'dessert', 'drinks', 'other']
-                                const aIndex = order.indexOf(a.dish_category?.toLowerCase())
-                                const bIndex = order.indexOf(b.dish_category?.toLowerCase())
-                                return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex)
-                            })
-                            .map(([dishId, dishData]: [string, any]) => (
-                                <DishCard
-                                    key={dishId}
-                                    dish={dishData.dish}
-                                    attendee={dishData.attendee}
-                                    category={dishData.dish_category}
-                                />
-                            ))}
-                    </Stack>
-                ) : (
-                    <Text c="dimmed" fs="italic" ta="center" size="sm">No dishes added yet. Be the first!</Text>
-                )}
+	return (
+		<>
+			<LoadingOverlay visible={isLoading} zIndex={1000} overlayProps={{ radius: "sm", blur: 2 }} />
+			<Transition
+				mounted={!isLoading}
+				transition="fade"
+				duration={400}
+				timingFunction="ease"
+			>
+				{(transitionStyle) => (
+					<>
+						<Container size="xxl" mt={80}>
 
-            </Paper>
-        </Container>
-    )
+							<Modal opened={opened} padding={0} onClose={close} title={<Text size="lg" fw="bold">Add a dish</Text>} bg="var(--bg-primary)">
+							<Group justify="center" w="100%">
+								<AvatarGroup>
+									<Avatar size="lg" style={{ justifyContent: "center", alignItems: "center" }}><Image alt="rice emoji" src="/public/rice.png" fit="cover" w="60%" /></Avatar>
+									<Avatar size="lg" style={{ justifyContent: "center", alignItems: "center", zIndex: 100 }}><Image alt="meat emoji" src="/public/meat.png" fit="cover" w="60%" /></Avatar>
+									<Avatar size="lg" style={{ justifyContent: "center", alignItems: "center"}}><Image alt="cake emoji" src="/public/cake.png" fit="cover" w="60%" /></Avatar>
+								</AvatarGroup>
+							</Group>
+							
+								<DishForm plid={plid} closeModal={close} />
+							</Modal>
+
+							<Grid
+								justify="center"    // Centers the grid horizontally
+								gutter="lg"         // Adds spacing between grid columns
+								style={{ width: "100%", margin: "auto" }} // Ensures the grid spans the full width 
+							>
+								<Grid.Col span={3}>
+									<Stack>
+										<Card withBorder>
+											<Card.Section inheritPadding py="md" style={transitionStyle}>
+												<Text fw="bold" size="xl">{potluck?.name}</Text>
+												<Group justify="space-between" style={transitionStyle}>
+													<Text size="xs" c="var(--orange-primary)">
+														{dayjs(potluck?.datetime).format('MMM D, YYYY')} |  {dayjs(potluck?.datetime).format('h:mm A')}
+													</Text>
+												</Group>
+
+											</Card.Section>
+
+											<Spoiler maxHeight={72} showLabel={<Text mt="sm" size="sm">view more</Text>} hideLabel={<Text mt="sm" size="sm">hide</Text>} style={transitionStyle}>
+												<Text mt="sm" c="dimmed" size="sm">{potluck?.information}</Text>
+											</Spoiler>
+										</Card>
+
+										<Accordion variant="filled" radius="md" bd="2px solid var(--border-primary)" bdrs="md">
+											<Accordion.Item value="photos" style={transitionStyle}>
+												<Accordion.Control
+													icon={<IconUsers size={22} stroke={1.5} color="var(--mantine-color-dimmed)" />}
+												>
+													{attendeeNames.length} people joined this event
+												</Accordion.Control>
+												<Accordion.Panel>
+													<Group>
+														<>
+															{
+																viewableAttendees.map((name) => (
+																	<Tooltip
+																		withArrow
+																		label={name}
+																		bg="var(--bg-primary)"
+																		color="var(--text-light)"
+																	>
+																		<Avatar key={name} name={name} color="initials" allowedInitialsColors={['blue', 'red', 'orange']} />
+																	</Tooltip>
+																))}
+
+															{ // Toggle expanded or minmized view of attendees
+																attendeesExpanded ? 
+																	<UnstyledButton onClick={showLessAttendees}>
+																		<Avatar>
+																		<IconEyeOff size={16}/>
+
+																		</Avatar>
+																	</UnstyledButton>
+																:
+																	<Tooltip
+																		withArrow
+																		label={attendeeNames.slice(8, -1).join(", ")}
+																		bg="var(--bg-primary)"
+																		color="var(--text-light)"
+																	>
+																		<UnstyledButton onClick={(showMoreAttendees)}>
+																			<Avatar>+{attendeeNames.slice(8, -1).length}</Avatar>
+																		</UnstyledButton>
+																	</Tooltip>
+															}
+														
+														</>
+													</Group>
+												</Accordion.Panel>
+											</Accordion.Item>
+										</Accordion>
+									</Stack>
+								</Grid.Col>
+
+								<Grid.Col span={5}>
+									<Stack>
+										<Group align="center" justify="space-between">
+											<Tabs variant="pills" defaultValue="1" value={activeTab} onChange={setActiveTab} py={3} px="sm">
+												<Tabs.List justify="space-between">
+													<Tabs.Tab value="1" color="var(--bg-input-dark)" >
+														Main
+													</Tabs.Tab>
+													<Tabs.Tab value="2" color="var(--bg-input-dark)">
+														Sides
+													</Tabs.Tab>
+													<Tabs.Tab value="3" color="var(--bg-input-dark)">
+														Drinks
+													</Tabs.Tab>
+													<Tabs.Tab value="4" color="var(--bg-input-dark)">
+														Desserts
+													</Tabs.Tab>
+													<Tabs.Tab value="5" color="var(--bg-input-dark)">
+														Other
+													</Tabs.Tab>
+												</Tabs.List>
+											</Tabs>
+
+											<Group>
+												<CopyButton value={typeof window !== 'undefined' ? window.location.href : ''}>
+													{({ copy }) => (
+														<Button
+															color="primaryColor"
+															onClick={() => {
+																copy()
+																notifications.show({
+																	radius: "md",
+																	color: "var(--success",
+																	title: 'Link copied!',
+																	message: 'Share this link with your friends to plan dishes!',
+																	icon: <IconCheck size={16} />,
+																})
+															}}
+														>
+															Share
+														</Button>
+													)}
+												</CopyButton>
+												<Button onClick={open} color="var(--bg-input-dark)" bd="2px solid var(--border-primary)">Add</Button>
+											</Group>
+										</Group>
+
+										<Card withBorder radius="md" p={0}>
+											<Table striped style={transitionStyle}>
+												<Table.Thead>
+													<Table.Tr>
+														<Table.Th style={{ textAlign: "left" }}>Name</Table.Th>
+														<Table.Th style={{ textAlign: "center" }}>Item</Table.Th>
+														<Table.Th style={{ textAlign: "right" }}>Action</Table.Th>
+													</Table.Tr>
+												</Table.Thead>
+												<Table.Tbody>
+													{Object.keys(potluck?.dishes || {}).length > 0 ? (
+														Object.entries(potluck?.dishes || {})
+															.sort(([, a], [, b]) => {
+																const order = ['main', 'side', 'dessert', 'drinks', 'other'];
+																const aIndex = order.indexOf(String(a.dish_category).toLowerCase());
+																const bIndex = order.indexOf(String(b.dish_category)?.toLowerCase());
+																return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
+															})
+															// Map a list of [key, value] pairs. Each key encodes a 
+															// dish's unique uuid. The value is the Dish data itself.
+															.map(([dishId, dish]) => (
+																<Table.Tr key={dishId}>
+																	<Table.Td style={{ textAlign: "left", width: "33.33%" }} c="dimmed">{dish.attendee}</Table.Td>
+																	<Table.Td style={{ textAlign: "center", width: "33.33%" }} c="dimmed">{dish.dish}</Table.Td>
+																	<Table.Td style={{ textAlign: "right", width: "33.33%" }} c="dimmed">
+																		<UnstyledButton>
+																			<IconTrash size={16} />
+																		</UnstyledButton>
+																	</Table.Td>
+																</Table.Tr>
+															))
+													) : (
+														<Table.Tr>
+															<Table.Td colSpan={3}>
+																<Text c="dimmed" fs="italic" ta="center" size="sm">
+																	No dishes added yet. Be the first!
+																</Text>
+															</Table.Td>
+														</Table.Tr>
+													)}
+												</Table.Tbody>
+											</Table>
+										</Card>
+										<Flex justify="end"><Text>x main items</Text></Flex>
+									</Stack>
+								</Grid.Col>
+
+								<Grid.Col span={3}>
+									<Card withBorder>
+										<Card.Section withBorder inheritPadding py="md">
+											<Group justify="space-between">
+												<Text fw="bold" size="xl">Checklist</Text>
+												<Button color="var(--bg-input-dark)">view</Button>
+											</Group>
+										</Card.Section>
+
+										<Text mt="sm" c="dimmed" size="sm">
+											To help keep track of what else needs to be brought, use this checklist as a reference.
+										</Text>
+
+										<Card.Section inheritPadding mt="xl" pb="md" style={transitionStyle}>
+											<Flex align="end" justify="space-between">
+												<Stack gap={0}>
+													<Flex align="end">
+														<Text size="xl" fw="bolder">6</Text>
+														<Text c="dimmed">/12</Text>
+													</Flex>
+													<Text>completed</Text>
+												</Stack>
+
+												<RingProgress
+													roundCaps
+													size={96}
+													thickness={10}
+													transitionDuration={250}
+													sections={[{ value: 50, color: "primaryColor" }]}>
+												</RingProgress>
+											</Flex>
+										</Card.Section>
+									</Card>
+								</Grid.Col>
+							</Grid>
+						</Container>
+					</>
+				)}
+			</Transition>
+		</>
+	)
 }

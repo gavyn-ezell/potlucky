@@ -8,20 +8,13 @@ import dayjs from 'dayjs'
 import { z } from 'zod'
 import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
-
+import type { PotluckFormEntry } from '@/types/types'
 
 export const Route = createFileRoute('/')({
   component: MainPage,
 })
 
-
 const INFORMATION_MAX_LENGTH = 512
-
-interface PotluckFormEntry {
-  name: string
-  datetime: Date | null
-  information: string | undefined
-}
 
 const defaultPotluckFormEntry: PotluckFormEntry = {
   name: '',
@@ -77,7 +70,6 @@ function MainPage() {
         }
 
         return response.json()
-
       }
       catch (error) {
         throw error
@@ -112,11 +104,12 @@ function MainPage() {
 
   return (
     <Container style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
-
-      <Paper >
+      <Paper
+        w={{base: "100%", xs: "380px"}}
+      >
         <header>
-          <Text size="xl" ta="center" mb="lg" fw="bold" >
-            Start planning your next potluck!
+          <Text size="lg" ta="left" mb="lg" fw="bold" mr="xl">
+            Start planning your potluck!
           </Text>
         </header>
 
@@ -162,8 +155,6 @@ function MainPage() {
               }}
             />
 
-
-
             <form.Field
               name="datetime"
               children={(field) => {
@@ -204,16 +195,17 @@ function MainPage() {
                     ? field.state.meta.errors[0]?.message
                     : null}
                 />)
-
               }}
             />
-
 
             <form.Field
               name="information"
               children={(field) => {
                 return (
                   <Textarea
+                    autosize
+                    minRows={2}
+                    maxRows={4}
                     label="Information"
                     placeholder={field.state.meta.isTouched ? undefined : 'Add any additional information here like an address, dish requirements, etc.'}
                     value={field.state.value}
@@ -242,7 +234,6 @@ function MainPage() {
               }}
             />
 
-
             <form.Subscribe
               selector={(state) => [state.canSubmit]}
             >
@@ -250,7 +241,7 @@ function MainPage() {
                 <Group justify="flex-end" mt="md">
                   <Button
                     type="submit"
-                    size="md"
+                    size="sm"
                     fullWidth
                     loading={mutation.isPending}
                     disabled={!canSubmit}
@@ -261,10 +252,7 @@ function MainPage() {
               )}
             </form.Subscribe>
           </Stack>
-
         </form>
-
-
       </Paper>
     </Container>
   )
