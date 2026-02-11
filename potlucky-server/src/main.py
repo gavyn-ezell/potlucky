@@ -1,10 +1,13 @@
 import uuid
+from datetime import datetime
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from botocore.exceptions import ClientError
 
 from src.models.potluck import PotluckPayload, PotluckItem, DishPayload, Dish
 from src.dynamodb.client import dynamodb_client
+
+THIRTY_DAYS_IN_SECONDS = 2592000
 
 app = FastAPI()
 
@@ -19,10 +22,14 @@ app.add_middleware(
 @app.post("/potluck")
 def create_potluck(payload: PotluckPayload):
     potluckId = str(uuid.uuid4())
+    potluck_datetime = datetime.fromisoformat(payload.datetime.replace('Z', '+00:00'))
+    expire_at = int(potluck_datetime.timestamp()) + THIRTY_DAYS_IN_SECONDS
+    
     try:
         dynamodb_client.create_potluck(PotluckItem(
             potluckId=potluckId,
-            **payload.model_dump()
+            **payload.model_dump(),
+            expire_at=expire_at
         ))
     except ClientError as e:
         raise HTTPException(status_code=500, detail="Something went wrong")

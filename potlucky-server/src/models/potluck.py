@@ -20,4 +20,4 @@ class PotluckPayload(BaseModel):
 class PotluckItem(PotluckPayload):
     potluckId: str
     dishes: dict[str, DishPayload] = {}
-
+    expire_at: int
