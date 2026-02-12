@@ -8,13 +8,15 @@ export interface PotluckDataResponse {
 }
 
 export interface DishResponse {
-  [dish_id: string]: Dish;
+  [dish_id: string]: DishEntry;
 }
-
 export interface Dish {
-  attendee: string;
   dish: string;
   dish_category: Category;
+}
+
+export interface DishEntry extends Dish {
+  attendee: string;
 }
 
 export enum Category {

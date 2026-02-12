@@ -9,6 +9,7 @@ import { DishForm } from "@/components/DishForm"
 import type { PotluckDataResponse } from "@/types/types"
 import { useEffect, useMemo, useState } from "react"
 import "../styles.css";
+import { AttendeeForm } from "@/components/AttendeeForm"
 
 /**
  * createFileRoute fetches the data from the API before the route 
@@ -59,13 +60,14 @@ function ExtractAttendees(data: PotluckDataResponse | undefined): string[] {
  * @returns 
  */
 function RouteComponent() {
+	const [currentAttendee, setCurrentAttendee] = useState<string | null>(null);
 	const [attendeesExpanded, setAttendeesExpanded] = useState<boolean>(false);
 	const [viewableAttendees, setViewableAttendees] = useState<string[]>([]);
 	const { plid } = Route.useParams()
 	const [opened, { open, close }] = useDisclosure(false);
 	const [activeTab, setActiveTab] = useState<string | null>('1');
 
-		// TanStack Query to get potluck data
+	// TanStack Query to get potluck data
 	const { isLoading, data: potluck } = useQuery({
 		queryKey: ['potluck', plid], queryFn: async (): Promise<PotluckDataResponse> => {
 			const response = await fetch(`${import.meta.env.VITE_POTLUCKY_API_URL}/potluck/${plid}`)
@@ -104,17 +106,25 @@ function RouteComponent() {
 					<>
 						<Container size="xxl" mt={80}>
 
-							<Modal opened={opened} padding={0} onClose={close} title={<Text size="lg" fw="bold">Add a dish</Text>} bg="var(--bg-primary)">
-							<Group justify="center" w="100%">
-								<AvatarGroup>
-									<Avatar size="lg" style={{ justifyContent: "center", alignItems: "center" }}><Image alt="rice emoji" src="/public/rice.png" fit="cover" w="60%" /></Avatar>
-									<Avatar size="lg" style={{ justifyContent: "center", alignItems: "center", zIndex: 100 }}><Image alt="meat emoji" src="/public/meat.png" fit="cover" w="60%" /></Avatar>
-									<Avatar size="lg" style={{ justifyContent: "center", alignItems: "center"}}><Image alt="cake emoji" src="/public/cake.png" fit="cover" w="60%" /></Avatar>
-								</AvatarGroup>
-							</Group>
+							<Modal opened={opened} padding={0} onClose={close} title={<Text size="lg" fw="bold">{currentAttendee ? 'Add a dish' : 'Sign In'}</Text>} bg="var(--bg-primary)">
+							{currentAttendee && (
+								<>
+								<Group justify="center" w="100%">
+									<AvatarGroup>
+										<Avatar size="lg" style={{ justifyContent: "center", alignItems: "center" }}><Image alt="rice emoji" src="/public/rice.png" fit="cover" w="60%" /></Avatar>
+										<Avatar size="lg" style={{ justifyContent: "center", alignItems: "center", zIndex: 100 }}><Image alt="meat emoji" src="/public/meat.png" fit="cover" w="60%" /></Avatar>
+										<Avatar size="lg" style={{ justifyContent: "center", alignItems: "center"}}><Image alt="cake emoji" src="/public/cake.png" fit="cover" w="60%" /></Avatar>
+									</AvatarGroup>
+								</Group>
+								<DishForm plid={plid} closeModal={close} attendee={currentAttendee} />
+								</>
+							)}
+							{!currentAttendee && (
+								<AttendeeForm closeModal={close} setCurrentAttendee={setCurrentAttendee} />
+							)}
 							
-								<DishForm plid={plid} closeModal={close} />
 							</Modal>
+							
 
 							<Grid
 								justify="center"    // Centers the grid horizontally
@@ -233,7 +243,8 @@ function RouteComponent() {
 														</Button>
 													)}
 												</CopyButton>
-												<Button onClick={open} color="var(--bg-input-dark)" bd="2px solid var(--border-primary)">Add</Button>
+												<Button onClick={open} color="var(--bg-input-dark)" bd="2px solid var(--border-primary)">Add a Dish</Button>
+												{currentAttendee && <Text c="dimmed">as {currentAttendee}</Text>}
 											</Group>
 										</Group>
 
