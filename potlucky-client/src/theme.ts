@@ -101,16 +101,6 @@ export const mantineTheme: MantineThemeOverride = createTheme({
       defaultProps: {
         striped: true,
       },
-      styles: {
-        table: {
-          "tbody tr:nth-of-type(odd)": {
-            backgroundColor: "white",
-          },
-          "tbody tr:nth-of-type(even)": {
-            backgroundColor: "transparent",
-          },
-        },
-      },
     }),
     Tabs: Tabs.extend({
       styles: {

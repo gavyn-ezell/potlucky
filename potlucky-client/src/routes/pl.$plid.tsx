@@ -274,7 +274,7 @@ function RouteComponent() {
 										</Group>
 
 										<Card withBorder radius="md" p={0}>
-											<Table striped style={transitionStyle}>
+											<Table style={transitionStyle}>
 												<Table.Thead>
 													<Table.Tr>
 														<Table.Th style={{ textAlign: "left" }}>Name</Table.Th>
