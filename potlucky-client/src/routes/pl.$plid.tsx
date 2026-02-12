@@ -1,12 +1,12 @@
 import { createFileRoute, redirect } from "@tanstack/react-router"
-import { Container, Text, Stack, Group, CopyButton, Button, Flex, Modal, Grid, Card, RingProgress, Table, Tabs, Accordion, UnstyledButton, Avatar, Tooltip, Spoiler, Skeleton, LoadingOverlay, Transition, AvatarGroup, Image } from "@mantine/core"
+import { Container, Text, Stack, Group, CopyButton, Button, Flex, Modal, Grid, Card, RingProgress, Table, Tabs, Accordion, UnstyledButton, Avatar, Tooltip, Spoiler, LoadingOverlay, Transition, AvatarGroup, Image } from "@mantine/core"
 import { useDisclosure } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
 import { useQuery } from "@tanstack/react-query"
 import dayjs from "dayjs"
-import { IconCheck, IconUsers, IconTrash, IconArrowsDiagonalMinimize, IconEyeOff } from "@tabler/icons-react"
+import { IconCheck, IconUsers, IconTrash, IconEyeOff } from "@tabler/icons-react"
 import { DishForm } from "@/components/DishForm"
-import type { PotluckDataResponse } from "@/types/types"
+import { Category, type PotluckDataResponse, type Progress } from "@/types/types"
 import { useEffect, useMemo, useState } from "react"
 import "../styles.css";
 
@@ -59,13 +59,13 @@ function ExtractAttendees(data: PotluckDataResponse | undefined): string[] {
  * @returns 
  */
 function RouteComponent() {
-	const [attendeesExpanded, setAttendeesExpanded] = useState<boolean>(false);
-	const [viewableAttendees, setViewableAttendees] = useState<string[]>([]);
 	const { plid } = Route.useParams()
 	const [opened, { open, close }] = useDisclosure(false);
 	const [activeTab, setActiveTab] = useState<string | null>('1');
+	const [attendeesExpanded, setAttendeesExpanded] = useState<boolean>(false);
+	const [viewableAttendees, setViewableAttendees] = useState<string[]>([]);
 
-		// TanStack Query to get potluck data
+	// TanStack Query to get potluck data
 	const { isLoading, data: potluck } = useQuery({
 		queryKey: ['potluck', plid], queryFn: async (): Promise<PotluckDataResponse> => {
 			const response = await fetch(`${import.meta.env.VITE_POTLUCKY_API_URL}/potluck/${plid}`)
@@ -74,12 +74,46 @@ function RouteComponent() {
 		retry: 3,
 	})
 
-
 	// Get all unique attendees
 	const attendeeNames = useMemo(()=>ExtractAttendees(potluck), [potluck]);
+
+	// Calculate the progress for the checklist
+	var categoryProgress = useMemo(()=> {
+		if (potluck) {
+			// Initialize map of progress for each category
+			var progressMap = new Map<Category, Progress>();
+			const requirements = new Map<Category, number>(Object.entries(potluck.requirements) as [Category, number][])
+			requirements.forEach((numRequired, category) => {
+				progressMap.set(category, {numRequired: numRequired, numCompleted: 0  })
+			})
+
+			// Iterate through potluck dishes and update the map for the corresponding category
+			Object.entries(potluck.dishes).forEach(([_, dish]) => {
+				const categoryProgress = progressMap.get(dish.dish_category)
+				progressMap.set(dish.dish_category, {...categoryProgress!, numCompleted: categoryProgress!.numCompleted + 1})
+			} )
+			return progressMap
+		}
+	}, [potluck])
+
+
+	// Calculate the total progress
+	var totalProgress = useMemo(()=> {
+		if (categoryProgress) {
+			var totalProgress : Progress = {numCompleted: 0, numRequired: 0}
+			categoryProgress.forEach((categoryProgress, _) => {
+				totalProgress.numRequired += categoryProgress.numRequired
+				totalProgress.numCompleted += categoryProgress.numCompleted
+			})
+			return totalProgress
+		}
+	}, [categoryProgress])
+
+
 	useEffect(() => {
 		setViewableAttendees(attendeeNames.slice(0, 8));
 	}, [attendeeNames]);
+
 
 	function showMoreAttendees() {
 		setAttendeesExpanded(true);
@@ -104,17 +138,19 @@ function RouteComponent() {
 					<>
 						<Container size="xxl" mt={80}>
 
-							<Modal opened={opened} padding={0} onClose={close} title={<Text size="lg" fw="bold">Add a dish</Text>} bg="var(--bg-primary)">
-							<Group justify="center" w="100%">
-								<AvatarGroup>
-									<Avatar size="lg" style={{ justifyContent: "center", alignItems: "center" }}><Image alt="rice emoji" src="/public/rice.png" fit="cover" w="60%" /></Avatar>
-									<Avatar size="lg" style={{ justifyContent: "center", alignItems: "center", zIndex: 100 }}><Image alt="meat emoji" src="/public/meat.png" fit="cover" w="60%" /></Avatar>
-									<Avatar size="lg" style={{ justifyContent: "center", alignItems: "center"}}><Image alt="cake emoji" src="/public/cake.png" fit="cover" w="60%" /></Avatar>
-								</AvatarGroup>
-							</Group>
-							
-								<DishForm plid={plid} closeModal={close} />
-							</Modal>
+							{
+								categoryProgress &&
+								<Modal opened={opened} padding={0} onClose={close} title={<Text size="lg" fw="bold">Add a dish</Text>} bg="var(--bg-primary)">
+									<Group justify="center" w="100%">
+										<AvatarGroup>
+											<Avatar size="lg" style={{ justifyContent: "center", alignItems: "center" }}><Image alt="rice emoji" src="/public/rice.png" fit="cover" w="60%" /></Avatar>
+											<Avatar size="lg" style={{ justifyContent: "center", alignItems: "center", zIndex: 100 }}><Image alt="meat emoji" src="/public/meat.png" fit="cover" w="60%" /></Avatar>
+											<Avatar size="lg" style={{ justifyContent: "center", alignItems: "center" }}><Image alt="cake emoji" src="/public/cake.png" fit="cover" w="60%" /></Avatar>
+										</AvatarGroup>
+									</Group>
+									<DishForm plid={plid} closeModal={close} categoryProgress={categoryProgress} />
+								</Modal>
+							}
 
 							<Grid
 								justify="center"    // Centers the grid horizontally
@@ -301,19 +337,24 @@ function RouteComponent() {
 											<Flex align="end" justify="space-between">
 												<Stack gap={0}>
 													<Flex align="end">
-														<Text size="xl" fw="bolder">6</Text>
-														<Text c="dimmed">/12</Text>
+														<Text size="xl" fw="bolder">{totalProgress?.numCompleted}</Text>
+														<Text c="dimmed">/{totalProgress?.numRequired}</Text>
 													</Flex>
 													<Text>completed</Text>
 												</Stack>
 
-												<RingProgress
-													roundCaps
-													size={96}
-													thickness={10}
-													transitionDuration={250}
-													sections={[{ value: 50, color: "primaryColor" }]}>
-												</RingProgress>
+												{
+													totalProgress && (
+														<RingProgress
+															roundCaps
+															size={96}
+															thickness={10}
+															transitionDuration={250}
+															sections={[{ value: (totalProgress.numCompleted / totalProgress.numRequired) * 100, color: "primaryColor" }]}>
+														</RingProgress>
+													)
+												}
+												
 											</Flex>
 										</Card.Section>
 									</Card>

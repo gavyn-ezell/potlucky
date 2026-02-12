@@ -6,7 +6,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import { useMutation } from "@tanstack/react-query"
 import { IconCheck, IconX } from "@tabler/icons-react"
 import { notifications } from "@mantine/notifications"
-import { Category, type Dish } from "@/types/types"
+import { Category, type Dish, type Progress } from "@/types/types"
 
 const defaultDishFormEntry: Dish = {
 	attendee: '',                   // The name of the person who added the dish
@@ -27,7 +27,7 @@ const formSchema = z.object({
  * 
  * @param plid the UUID of the potluck event
  */
-export function DishForm({ plid, closeModal }: { plid: string, closeModal: () => void }) {
+export function DishForm({ plid, categoryProgress, closeModal, }: { plid: string, categoryProgress: Map<Category, Progress>, closeModal: () => void }) {
 	const queryClient = useQueryClient()
 
 	const [isFocused, setIsFocused] = useState<Record<keyof Dish, boolean>>({
@@ -35,6 +35,13 @@ export function DishForm({ plid, closeModal }: { plid: string, closeModal: () =>
 		dish: false,
 		dish_category: false,
 	});
+
+
+  	const mainDishRemaining = categoryProgress.get(Category.Main)!.numRequired - categoryProgress.get(Category.Main)!.numCompleted 
+    const sideRemaining = categoryProgress.get(Category.Side)!.numRequired - categoryProgress.get(Category.Side)!.numCompleted
+    const dessertRemaining = categoryProgress.get(Category.Dessert)!.numRequired - categoryProgress.get(Category.Dessert)!.numCompleted
+    const drinksRemaining = categoryProgress.get(Category.Drinks)!.numRequired - categoryProgress.get(Category.Drinks)!.numCompleted
+    const otherRemaining = categoryProgress.get(Category.Other)!.numRequired - categoryProgress.get(Category.Other)!.numCompleted
 
 	const form = useForm({
 		defaultValues: defaultDishFormEntry,
@@ -165,12 +172,13 @@ export function DishForm({ plid, closeModal }: { plid: string, closeModal: () =>
 								label="Dish Category"
 								placeholder="What dish category is this?"
 								data={[
-									{ value: Category.Main, label: 'Main 🍖' },
-									{ value: Category.Side, label: 'Side 🍚' },
-									{ value: Category.Dessert, label: 'Dessert 🍰' },
-									{ value: Category.Drinks, label: 'Drinks 🥤' },
-									{ value: Category.Other, label: 'Other 🍽️' },
+									{ value: Category.Main, label: `Main 🍖  (${mainDishRemaining} needed)` },
+									{ value: Category.Side, label: `Side 🍚  (${sideRemaining} needed)` },
+									{ value: Category.Dessert, label: `Dessert 🍰 (${dessertRemaining} needed)`},
+									{ value: Category.Drinks, label: `Drinks 🥤 (${drinksRemaining} needed)` },
+									{ value: Category.Other, label: `Other 🍽️ (${otherRemaining} needed)` },
 								]}
+								comboboxProps={{ transitionProps: { transition: 'pop', duration: 200 } }}
 								onChange={(value) => field.handleChange(value as Dish['dish_category'])}
 								onFocus={() => setIsFocused({
 									attendee: false,

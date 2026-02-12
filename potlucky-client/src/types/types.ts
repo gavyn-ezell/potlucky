@@ -1,4 +1,11 @@
-// Represents the potluck JSON 'data' response
+
+export interface PotluckFormEntry {
+  name: string;
+  datetime: Date | null;
+  information: string | undefined;
+  requirements: Partial<Record<Category, number>>;
+}
+
 export interface PotluckDataResponse {
   datetime: string;
   name: string;
@@ -25,9 +32,8 @@ export enum Category {
   Other = "other",
 }
 
-export interface PotluckFormEntry {
-  name: string;
-  datetime: Date | null;
-  information: string | undefined;
-  requirements: Partial<Record<Category, number>>;
+export interface Progress {
+  numRequired: number, 
+  numCompleted: number
 }
+
