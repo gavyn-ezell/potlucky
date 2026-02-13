@@ -1,5 +1,5 @@
-import { Accordion, Button, Card, Container, createTheme, Input, InputWrapper, Modal, Paper, rem, Select, Table, Tabs, Text, Textarea } from "@mantine/core";
-import type { CSSVariablesResolver, MantineColorsTuple, MantineThemeOverride, TextInput } from "@mantine/core";
+import { Accordion, Button, Card, Container, createTheme, Input, Modal, Paper, rem, Select, Table, Tabs, Textarea } from "@mantine/core";
+import type { CSSVariablesResolver, MantineColorsTuple, MantineThemeOverride } from "@mantine/core";
 import "../src/styles.css";
 import { DateTimePicker } from "@mantine/dates";
 
@@ -101,23 +101,14 @@ export const mantineTheme: MantineThemeOverride = createTheme({
       defaultProps: {
         striped: true,
       },
-      styles: {
-        table: {
-          "tbody tr:nth-of-type(odd)": {
-            backgroundColor: "white",
-          },
-          "tbody tr:nth-of-type(even)": {
-            backgroundColor: "transparent",
-          },
-        },
-      },
     }),
     Tabs: Tabs.extend({
       styles: {
         root: {
-          background: "var(--bg-primary)",
+          background: "var(--bg-secondary)",
           border: "2px solid var(--border-primary)",
-          borderRadius: "8px"
+          borderRadius: "8px",
+          padding: "0px"
         },
       }
     }),
