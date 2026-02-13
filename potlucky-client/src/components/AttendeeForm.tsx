@@ -38,7 +38,7 @@ export function AttendeeForm({ closeModal, setCurrentAttendee }: { closeModal: (
 		}}>
 			<Stack>
                 <Text c="dimmed" size="sm">
-                    Sign in with your name to join the potluck
+                    Sign in with a name first before adding dishes
                 </Text>
 				<form.Field name="attendee">
 					{(field) => {

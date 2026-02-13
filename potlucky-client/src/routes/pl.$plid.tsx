@@ -1,10 +1,10 @@
 import { createFileRoute, redirect } from "@tanstack/react-router"
-import { Container, Text, Stack, Group, CopyButton, Button, Flex, Modal, Grid, Card, RingProgress, Table, Tabs, Accordion, UnstyledButton, Avatar, Tooltip, Spoiler, LoadingOverlay, Transition, AvatarGroup, Image, CheckIcon, ActionIcon, Center } from "@mantine/core"
+import { Container, Text, Stack, Group, CopyButton, Button, Flex, Modal, Grid, Card, RingProgress, Table, Tabs, Accordion, UnstyledButton, Avatar, Tooltip, Spoiler, LoadingOverlay, Transition, AvatarGroup, Image, ActionIcon, Center, Menu } from "@mantine/core"
 import { useDisclosure } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import dayjs from "dayjs"
-import { IconCheck, IconUsers, IconTrash, IconEyeOff } from "@tabler/icons-react"
+import { IconCheck, IconUsers, IconTrash, IconEyeOff, IconX } from "@tabler/icons-react"
 import { DishForm } from "@/components/DishForm"
 import { Category, type PotluckDataResponse, type PotluckProgress } from "@/types/types"
 import { useEffect, useMemo, useState } from "react"
@@ -56,7 +56,7 @@ function ExtractAttendees(data: PotluckDataResponse | undefined): string[] {
  * Builds a progress map for each category in a potluck event, tracking the number of required
  * and completed dishes for each category.
  *
- * @param {PotluckDataResponse} [potluck] - The potluck data containing requirements and dishes.
+ * @param {PotluckDataResponse} [potluck] - The potluck data containing goals and dishes.
  * @returns {Map<Category, PotluckProgress>} A map where each key is a category and the value
  * represents the progress (number of required and completed dishes) for that category.
  *
@@ -108,6 +108,7 @@ function BuildCategoryProgress(potluck?: PotluckDataResponse): Map<Category, Pot
  */
 function RouteComponent() {
 	const { plid } = Route.useParams()
+	const queryClient = useQueryClient()
 
 	const [addDishModalOpened, addDishModalHandlers] = useDisclosure(false);
 	const [viewProgressModalOpened, viewProgressModalHandlers] = useDisclosure(false);
@@ -124,6 +125,32 @@ function RouteComponent() {
 			return await response.json()
 		},
 		retry: 3,
+	})
+
+	const deleteDishMutation = useMutation({
+		mutationFn: async (dishId: string) => {
+			const response = await fetch(`${import.meta.env.VITE_POTLUCKY_API_URL}/potluck/${plid}/dish/${dishId}`, {
+				method: 'DELETE',
+			})
+			if (!response.ok) {
+				throw Error('Failed to delete dish!')
+			}
+			return await response.json()
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ['potluck', plid] })
+
+		},
+		onError: () => {
+			notifications.show({
+				radius: "md",
+				color: "var(--error",
+				title: 'Error',
+				message: 'Failed to delete dish!',
+				icon: <IconX size={16} />,
+			})
+			
+		}
 	})
 
 	// Get all unique attendees
@@ -174,26 +201,26 @@ function RouteComponent() {
 
 							{categoryProgress &&
 								<>
-									<Modal size="md" opened={viewProgressModalOpened} padding={0} onClose={viewProgressModalHandlers.close} title={<Text size="lg" fw="bold">Checklist Progress</Text>}>
+									<Modal size="md" opened={viewProgressModalOpened} padding={0} onClose={viewProgressModalHandlers.close} title={<Text size="lg" fw="bold">Dish Goals</Text>}>
 										<Stack justify="center" w="100%">
 											{Array.from(categoryProgress).map(([category, progress]) => (
-												<CategoryProgressStats category={category} progress={progress} />
+												<CategoryProgressStats key={category} category={category} progress={progress} />
 											))}
 										</Stack>
 									</Modal>
 
-									<Modal opened={addDishModalOpened} padding={0} onClose={addDishModalHandlers.close} title={<Text size="lg" fw="bold">Add a dish</Text>} bg="var(--bg-primary)">
+									<Modal opened={addDishModalOpened} padding={0} onClose={addDishModalHandlers.close} title={<Text size="lg" fw="bold">Add a Dish</Text>} bg="var(--bg-primary)">
 										{currentAttendee && (
 											<>
-											<Group justify="center" w="100%">
-											<AvatarGroup>
-												<Avatar size="lg" style={{ justifyContent: "center", alignItems: "center" }}><Image alt="rice emoji" src="/public/rice.png" fit="cover" w="60%" /></Avatar>
-												<Avatar size="lg" style={{ justifyContent: "center", alignItems: "center", zIndex: 100 }}><Image alt="meat emoji" src="/public/meat.png" fit="cover" w="60%" /></Avatar>
-												<Avatar size="lg" style={{ justifyContent: "center", alignItems: "center" }}><Image alt="cake emoji" src="/public/cake.png" fit="cover" w="60%" /></Avatar>
-											</AvatarGroup>
-										</Group>
-										<DishForm plid={plid} closeModal={addDishModalHandlers.close} categoryProgress={categoryProgress} />
-										</>
+												<Group justify="center" w="100%">
+													<AvatarGroup>
+														<Avatar size="lg" style={{ justifyContent: "center", alignItems: "center" }}><Image alt="rice emoji" src="/public/rice.png" fit="cover" w="60%" /></Avatar>
+														<Avatar size="lg" style={{ justifyContent: "center", alignItems: "center", zIndex: 100 }}><Image alt="meat emoji" src="/public/meat.png" fit="cover" w="60%" /></Avatar>
+														<Avatar size="lg" style={{ justifyContent: "center", alignItems: "center" }}><Image alt="cake emoji" src="/public/cake.png" fit="cover" w="60%" /></Avatar>
+													</AvatarGroup>
+												</Group>
+												<DishForm plid={plid} closeModal={addDishModalHandlers.close} categoryProgress={categoryProgress} attendee={currentAttendee} />
+											</>
 										)}
 										{!currentAttendee && (
 											<AttendeeForm closeModal={addDishModalHandlers.close} setCurrentAttendee={setCurrentAttendee} />
@@ -230,7 +257,7 @@ function RouteComponent() {
 												<Accordion.Control
 													icon={<IconUsers size={22} stroke={1.5} color="var(--mantine-color-dimmed)" />}
 												>
-													{attendeeNames.length} {attendeeNames.length == 1 ? "person" : "people"} joined this event
+													{attendeeNames.length} {attendeeNames.length == 1 ? "person" : "people"} joined this potluck
 												</Accordion.Control>
 												<Accordion.Panel>
 													<Group>
@@ -238,12 +265,13 @@ function RouteComponent() {
 															{
 																viewableAttendees.map((name) => (
 																	<Tooltip
+																		key={name}
 																		withArrow
 																		label={name}
 																		bg="var(--bg-primary)"
 																		color="var(--text-light)"
 																	>
-																		<Avatar key={name} name={name} color="initials" allowedInitialsColors={['blue', 'red', 'orange']} />
+																		<Avatar name={name} color="initials" allowedInitialsColors={['blue', 'red', 'orange']} />
 																	</Tooltip>
 																))}
 
@@ -349,9 +377,20 @@ function RouteComponent() {
 																	<Table.Td style={{ textAlign: "left", width: "33.33%" }} c="dimmed">{dish.attendee}</Table.Td>
 																	<Table.Td style={{ textAlign: "center", width: "33.33%" }} c="dimmed">{dish.dish}</Table.Td>
 																	<Table.Td style={{ textAlign: "right", width: "33.33%" }} c="dimmed">
-																		<UnstyledButton>
-																			<IconTrash size={16} />
-																		</UnstyledButton>
+																		{currentAttendee == dish.attendee && (
+																			<Menu width={100} position="bottom-start">
+																				<Menu.Target>
+																					<UnstyledButton>
+																						<IconTrash size={16} />
+																					</UnstyledButton>
+																				</Menu.Target>
+																				<Menu.Dropdown>
+																					<Menu.Item disabled={deleteDishMutation.isPending} onClick={() => deleteDishMutation.mutateAsync(dishId)}>
+																						Delete
+																					</Menu.Item>
+																				</Menu.Dropdown>
+																			</Menu>
+																		)}
 																	</Table.Td>
 																</Table.Tr>
 															))
@@ -375,18 +414,18 @@ function RouteComponent() {
 									<Card withBorder>
 										<Card.Section withBorder inheritPadding py="md">
 											<Group justify="space-between">
-												<Text fw="bold" size="xl">Checklist</Text>
+												<Text fw="bold" size="xl">Dish Goals</Text>
 												<Button disabled={totalProgress?.numRequired == 0} color="var(--bg-input-dark)" onClick={viewProgressModalHandlers.open}>view</Button>
 											</Group>
 										</Card.Section>
 
 										<Text mt="sm" c="dimmed" size="sm">
-											To help keep track of what else needs to be brought, use this checklist as a reference.
+											To help keep track of what else needs to be brought, use this as a reference.
 										</Text>
 
 										<Card.Section inheritPadding mt="xl" pb="md" style={transitionStyle}>
 											{totalProgress?.numRequired == 0 ?
-												<Text c="blue">No requirements</Text>
+												<Text c="blue">No dish goals.</Text>
 												:
 
 												<Flex align="end" justify="space-between">

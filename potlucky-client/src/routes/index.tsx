@@ -225,7 +225,7 @@ function MainPage() {
                     placeholder={
                       field.state.meta.isTouched
                         ? undefined
-                        : "Add any additional information here like an address, dish requirements, etc."
+                        : "Add any additional information here like an address, allergies, preferences, etc."
                     }
                     value={field.state.value}
                     disabled={mutation.isPending}
@@ -246,7 +246,7 @@ function MainPage() {
               <Accordion.Item value="requirements">
                 <Accordion.Control>
                   <Text size="sm" fw={500}>
-                    Dish Requirements (Optional)
+                    Dish Goals (Optional)
                   </Text>
                 </Accordion.Control>
                 <Accordion.Panel>

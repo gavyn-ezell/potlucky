@@ -5,7 +5,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import { useMutation } from "@tanstack/react-query"
 import { IconCheck, IconX } from "@tabler/icons-react"
 import { notifications } from "@mantine/notifications"
-import { Category, type Dish, type PotluckProgress } from "@/types/types"
+import { Category, type Dish, type DishEntry, type PotluckProgress } from "@/types/types"
 import { getCategoryEmoji } from "@/utils"
 
 
@@ -32,25 +32,18 @@ const formSchema = z.object({
  * @returns {JSX.Element} The rendered DishForm component.
  * ```
  */
-export function DishForm({ plid, categoryProgress, closeModal, attendee, }: { plid: string, categoryProgress: Map<Category, PotluckProgress>, closeModal: () => void, attendee: string }) {
+export function DishForm({ plid, categoryProgress, closeModal, attendee }: { plid: string, categoryProgress: Map<Category, PotluckProgress>, closeModal: () => void, attendee: string }) {
 	const queryClient = useQueryClient()
 
-	const [isFocused, setIsFocused] = useState<Record<keyof Dish, boolean>>({
-		attendee: false,
-		dish: false,
-		dish_category: false,
-	});
-	
-
 	const generateComboBoxLabels = () => {
-		const labelsList =  Array<{value: string, label: string}>()
+		const labelsList = Array<{ value: string, label: string }>()
 		categoryProgress.forEach((progress, category) => {
-			const numRequirementsLeft = Math.max(0, progress.numRequired - progress.numCompleted )
-			const labelMessage = `${category} ${getCategoryEmoji(category)} (${progress.numRequired > 0 ? numRequirementsLeft + " left" : "optional"})`
+			const numRequirementsLeft = Math.max(0, progress.numRequired - progress.numCompleted)
+			const labelMessage = `${category} ${getCategoryEmoji(category)} (${progress.numRequired > 0 ? (numRequirementsLeft === 0 ? "Goal met" : numRequirementsLeft + " left") : "Optional"})`
 
 			const label = {
-				value: 	category,
-				label: 	labelMessage,
+				value: category,
+				label: labelMessage,
 			}
 			labelsList.push(label)
 		})
@@ -119,36 +112,6 @@ export function DishForm({ plid, categoryProgress, closeModal, attendee, }: { pl
 			form.handleSubmit()
 		}}>
 			<Stack>
-				{/* <form.Field name="attendee">
-					{(field) => {
-						return (
-							<TextInput
-								value={field.state.value}
-								label="Attendee"
-								onFocus={() => setIsFocused({
-									attendee: true,
-									dish: false,
-									dish_category: false,
-								})}
-								onChange={(e) => field.handleChange(e.target.value)}
-								onBlur={() => {
-									setIsFocused({
-										attendee: false,
-										dish: false,
-										dish_category: false,
-									})
-									field.handleBlur()
-								}}
-								error={!isFocused['attendee']
-									&& field.state.meta.isDirty
-									&& !field.state.meta.isValid
-									? field.state.meta.errors[0]?.message
-									: null}
-								placeholder={field.state.meta.isTouched ? undefined : 'Who is bringing the dish?'}
-							/>
-						)
-					}}
-				</form.Field> */}
 				<form.Field name="dish">
 					{(field) => {
 						return (
@@ -177,21 +140,22 @@ export function DishForm({ plid, categoryProgress, closeModal, attendee, }: { pl
 								comboboxProps={{ transitionProps: { transition: 'pop', duration: 200 } }}
 								onChange={(value) => field.handleChange(value as Dish['dish_category'])}
 								onBlur={field.handleBlur}
+								allowDeselect={false}
 							/>
 						)
 					}}
 				</form.Field>
 				<form.Subscribe
-					selector={(state) => [state.canSubmit]}
+					selector={(state) => [state.canSubmit, state.isPristine]}
 				>
-					{([canSubmit]) => (
+					{([canSubmit, isPristine]) => (
 						<Group justify="flex-end" mt="md">
 							<Button
 								type="submit"
 								size="md"
 								fullWidth
 								loading={mutation.isPending}
-								disabled={!canSubmit}
+								disabled={!canSubmit || isPristine || mutation.isPending}
 							>
 								Create
 							</Button>
