@@ -32,7 +32,7 @@ export enum Category {
   Other = "other",
 }
 
-export interface Progress {
+export interface PotluckProgress {
   numRequired: number, 
   numCompleted: number
 }

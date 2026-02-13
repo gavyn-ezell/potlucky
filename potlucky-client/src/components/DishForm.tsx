@@ -6,7 +6,9 @@ import { useQueryClient } from "@tanstack/react-query"
 import { useMutation } from "@tanstack/react-query"
 import { IconCheck, IconX } from "@tabler/icons-react"
 import { notifications } from "@mantine/notifications"
-import { Category, type Dish, type Progress } from "@/types/types"
+import { Category, type Dish, type PotluckProgress } from "@/types/types"
+import { getCategoryEmoji } from "@/utils"
+
 
 const defaultDishFormEntry: Dish = {
 	attendee: '',                   // The name of the person who added the dish
@@ -20,14 +22,20 @@ const formSchema = z.object({
 	dish_category: z.enum(Category)
 })
 
+
 /**
- * DishForm contains the HTML form used to create a new dish with a dish name, attendee, and category.
- * Once submitted, the component will invalidate the TanStack query keys to refresh the potluck
- * data in the application UI and display appropriate success/error messages.
- * 
- * @param plid the UUID of the potluck event
+ * DishForm component allows users to add a new dish to a potluck event.
+ * It provides a form with fields for attendee name, dish name, and dish category.
+ * The form validates input fields and submits the data to the server.
+ *
+ * @param {string} plid - The unique identifier for the potluck event.
+ * @param {Map<Category, PotluckProgress>} categoryProgress - A map containing the progress of each dish category in the potluck.
+ * @param {() => void} closeModal - A function to close the modal after successful submission.
+ *
+ * @returns {JSX.Element} The rendered DishForm component.
+ * ```
  */
-export function DishForm({ plid, categoryProgress, closeModal, }: { plid: string, categoryProgress: Map<Category, Progress>, closeModal: () => void }) {
+export function DishForm({ plid, categoryProgress, closeModal, }: { plid: string, categoryProgress: Map<Category, PotluckProgress>, closeModal: () => void }) {
 	const queryClient = useQueryClient()
 
 	const [isFocused, setIsFocused] = useState<Record<keyof Dish, boolean>>({
@@ -35,13 +43,24 @@ export function DishForm({ plid, categoryProgress, closeModal, }: { plid: string
 		dish: false,
 		dish_category: false,
 	});
+	
 
+	const generateComboBoxLabels = () => {
+		const labelsList =  Array<{value: string, label: string}>()
+		categoryProgress.forEach((progress, category) => {
+			const numRequirementsLeft = Math.max(0, progress.numRequired - progress.numCompleted )
+			const labelMessage = `${category} ${getCategoryEmoji(category)} (${progress.numRequired > 0 ? numRequirementsLeft + " left" : "optional"})`
 
-  	const mainDishRemaining = categoryProgress.get(Category.Main)!.numRequired - categoryProgress.get(Category.Main)!.numCompleted 
-    const sideRemaining = categoryProgress.get(Category.Side)!.numRequired - categoryProgress.get(Category.Side)!.numCompleted
-    const dessertRemaining = categoryProgress.get(Category.Dessert)!.numRequired - categoryProgress.get(Category.Dessert)!.numCompleted
-    const drinksRemaining = categoryProgress.get(Category.Drinks)!.numRequired - categoryProgress.get(Category.Drinks)!.numCompleted
-    const otherRemaining = categoryProgress.get(Category.Other)!.numRequired - categoryProgress.get(Category.Other)!.numCompleted
+			const label = {
+				value: 	category,
+				label: 	labelMessage,
+			}
+			labelsList.push(label)
+		})
+
+		return labelsList
+	}
+
 
 	const form = useForm({
 		defaultValues: defaultDishFormEntry,
@@ -171,13 +190,7 @@ export function DishForm({ plid, categoryProgress, closeModal, }: { plid: string
 								value={field.state.value}
 								label="Dish Category"
 								placeholder="What dish category is this?"
-								data={[
-									{ value: Category.Main, label: `Main 🍖  (${mainDishRemaining} needed)` },
-									{ value: Category.Side, label: `Side 🍚  (${sideRemaining} needed)` },
-									{ value: Category.Dessert, label: `Dessert 🍰 (${dessertRemaining} needed)`},
-									{ value: Category.Drinks, label: `Drinks 🥤 (${drinksRemaining} needed)` },
-									{ value: Category.Other, label: `Other 🍽️ (${otherRemaining} needed)` },
-								]}
+								data={generateComboBoxLabels()}
 								comboboxProps={{ transitionProps: { transition: 'pop', duration: 200 } }}
 								onChange={(value) => field.handleChange(value as Dish['dish_category'])}
 								onFocus={() => setIsFocused({
