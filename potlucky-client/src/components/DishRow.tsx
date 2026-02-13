@@ -10,9 +10,15 @@ export const CATEGORY_CONFIG: Record<string, { color: string; emoji: string }> =
 }
 
 /**
- * DishRow represents an entry in a dish table view. It displays a dish's 
- * name, attendee, and category. Dishes can be deleted only by the attendee
- * who create it.
+ * A functional component that renders a row displaying information about a dish,
+ * including its name, the attendee who brought it, and its category with a corresponding
+ * color-coded label and emoji.
+ *
+ * @param {string} dish - The name of the dish.
+ * @param {string} attendee - The name of the attendee who brought the dish.
+ * @param {string} dish_category - The category of the dish, used to determine the label's color and emoji.
+ *
+ * @returns {JSX.Element} A styled row displaying the dish information.
  */
 export function DishRow({ dish, attendee, dish_category }: Dish) {
 	const config = CATEGORY_CONFIG[dish_category.toLowerCase()] || CATEGORY_CONFIG.other
@@ -21,11 +27,6 @@ export function DishRow({ dish, attendee, dish_category }: Dish) {
 		<Paper
 			p="md"
 			radius="md"
-			style={{
-				background: 'rgba(255, 255, 255, 0.05)',
-				backdropFilter: 'blur(10px)',
-				border: '1px solid rgba(255, 255, 255, 0.1)',
-			}}
 		>
 			<Group justify="space-between" align="flex-start" wrap="nowrap">
 				<Stack gap="xs" style={{ flex: 1, minWidth: 0 }}>

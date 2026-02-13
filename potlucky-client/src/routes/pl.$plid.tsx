@@ -1,14 +1,15 @@
 import { createFileRoute, redirect } from "@tanstack/react-router"
-import { Container, Text, Stack, Group, CopyButton, Button, Flex, Modal, Grid, Card, RingProgress, Table, Tabs, Accordion, UnstyledButton, Avatar, Tooltip, Spoiler, Skeleton, LoadingOverlay, Transition, AvatarGroup, Image } from "@mantine/core"
+import { Container, Text, Stack, Group, CopyButton, Button, Flex, Modal, Grid, Card, RingProgress, Table, Tabs, Accordion, UnstyledButton, Avatar, Tooltip, Spoiler, LoadingOverlay, Transition, AvatarGroup, Image, CheckIcon, ActionIcon, Center } from "@mantine/core"
 import { useDisclosure } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
 import { useQuery } from "@tanstack/react-query"
 import dayjs from "dayjs"
-import { IconCheck, IconUsers, IconTrash, IconArrowsDiagonalMinimize, IconEyeOff } from "@tabler/icons-react"
+import { IconCheck, IconUsers, IconTrash, IconEyeOff } from "@tabler/icons-react"
 import { DishForm } from "@/components/DishForm"
-import type { PotluckDataResponse } from "@/types/types"
+import { Category, type PotluckDataResponse, type PotluckProgress } from "@/types/types"
 import { useEffect, useMemo, useState } from "react"
 import "../styles.css";
+import { CategoryProgressStats } from "@/components/CategoryProgressStats"
 import { AttendeeForm } from "@/components/AttendeeForm"
 
 /**
@@ -31,10 +32,11 @@ export const Route = createFileRoute('/pl/$plid')({
 })
 
 /**
- * ExtractAttendees parses a list of potluck dishes and returns an array
- * of unique attendee names. If the potluck data is undefined, the method
- * returns an empty array.
- * @param data 
+ * Extracts a list of unique attendees from the provided potluck data.
+ *
+ * @param data - The potluck data response containing information about dishes and their attendees.
+ *               If `undefined`, an empty array is returned.
+ * @returns An array of unique attendee names.
  */
 function ExtractAttendees(data: PotluckDataResponse | undefined): string[] {
 	var uniqueAttendees = new Set<string>();
@@ -51,21 +53,69 @@ function ExtractAttendees(data: PotluckDataResponse | undefined): string[] {
 }
 
 /**
- * RouteComponent contains the user interface for displaying and mutating
- * potluck information. It uses a TanStack Query that automatically fetches the 
- * potluck data when the component is mounted. A caching mechanism is built-in
- * so that subsequent requests for the same data are pulled from a cache instead
- * of the API endpoint. If the route parameter changes, or the query key is invalidated,
- * or the cache becomes stale, the component will make a new request to the API.
- * @returns 
+ * Builds a progress map for each category in a potluck event, tracking the number of required
+ * and completed dishes for each category.
+ *
+ * @param {PotluckDataResponse} [potluck] - The potluck data containing requirements and dishes.
+ * @returns {Map<Category, PotluckProgress>} A map where each key is a category and the value
+ * represents the progress (number of required and completed dishes) for that category.
+ *
+ * The function performs the following steps:
+ * 1. Initializes all categories with default progress values (0 required, 0 completed).
+ * 2. If the `potluck` object is provided, applies the requirements for each category.
+ * 3. Counts the number of completed dishes per category, updating the progress map
+ *    only for categories that have a requirement.
+ */
+function BuildCategoryProgress(potluck?: PotluckDataResponse): Map<Category, PotluckProgress> {
+	const progressMap = new Map<Category, PotluckProgress>();
+	if (!potluck || !potluck.requirements) return progressMap;
+
+	// Initialize all categories with defaults
+	(Object.values(Category) as Category[]).forEach(c => progressMap.set(c, { numRequired: 0, numCompleted: 0 }));
+
+	// Update with requirements
+	(Object.entries(potluck.requirements) as [Category, number][]).forEach(([category, numRequired]) => {
+		progressMap.set(category, { numRequired, numCompleted: 0 });
+	});
+
+	// Count numCompleted per category (only if the category has a requirement)
+	Object.values(potluck.dishes || {}).forEach(dish => {
+		const prog = progressMap.get(dish.dish_category);
+		const req = potluck.requirements[dish.dish_category as keyof typeof potluck.requirements];
+		if (prog !== undefined && typeof req === 'number') {
+			// Do not contribute completed counts that overflow the minimum requirements
+			progressMap.set(dish.dish_category, { ...prog, numCompleted: Math.min(prog.numRequired, prog.numCompleted + 1) });
+		}
+	});
+
+	return progressMap;
+}
+
+/**
+ * The `RouteComponent` is a React functional component that renders the main interface
+ * for a potluck event. It utilizes TanStack Query for data fetching, Mantine components
+ * for UI, and various hooks for state management. The component is responsible for
+ * displaying potluck details, attendees, dishes, and a checklist for tracking progress.
+ *
+ * @returns {JSX.Element} The rendered JSX for the potluck event page.
+ *
+ * @remarks
+ * - The component fetches potluck data using the `useQuery` hook.
+ * - It calculates progress for the checklist and manages attendee visibility.
+ * - It includes modals for adding dishes and viewing checklist progress.
+ * - The layout is structured using a responsive grid system.
+ *
  */
 function RouteComponent() {
+	const { plid } = Route.useParams()
+
+	const [addDishModalOpened, addDishModalHandlers] = useDisclosure(false);
+	const [viewProgressModalOpened, viewProgressModalHandlers] = useDisclosure(false);
+
+	const [activeTab, setActiveTab] = useState<string | null>('1');
 	const [currentAttendee, setCurrentAttendee] = useState<string | null>(null);
 	const [attendeesExpanded, setAttendeesExpanded] = useState<boolean>(false);
 	const [viewableAttendees, setViewableAttendees] = useState<string[]>([]);
-	const { plid } = Route.useParams()
-	const [opened, { open, close }] = useDisclosure(false);
-	const [activeTab, setActiveTab] = useState<string | null>('1');
 
 	// TanStack Query to get potluck data
 	const { isLoading, data: potluck } = useQuery({
@@ -76,9 +126,25 @@ function RouteComponent() {
 		retry: 3,
 	})
 
-
 	// Get all unique attendees
-	const attendeeNames = useMemo(()=>ExtractAttendees(potluck), [potluck]);
+	const attendeeNames = useMemo(() => ExtractAttendees(potluck), [potluck]);
+
+	// Calculate the progress for the checklist
+	const categoryProgress = useMemo(() => BuildCategoryProgress(potluck), [potluck]);
+
+	// Calculate the total progress
+	var totalProgress = useMemo(() => {
+		if (categoryProgress) {
+			var totalProgress: PotluckProgress = { numCompleted: 0, numRequired: 0 }
+			categoryProgress.forEach((categoryProgress, _) => {
+				totalProgress.numRequired += categoryProgress.numRequired
+				totalProgress.numCompleted += categoryProgress.numCompleted
+			})
+			return totalProgress
+		}
+	}, [categoryProgress])
+
+
 	useEffect(() => {
 		setViewableAttendees(attendeeNames.slice(0, 8));
 	}, [attendeeNames]);
@@ -106,25 +172,35 @@ function RouteComponent() {
 					<>
 						<Container size="xxl" mt={80}>
 
-							<Modal opened={opened} padding={0} onClose={close} title={<Text size="lg" fw="bold">{currentAttendee ? 'Add a dish' : 'Sign In'}</Text>} bg="var(--bg-primary)">
-							{currentAttendee && (
+							{categoryProgress &&
 								<>
-								<Group justify="center" w="100%">
-									<AvatarGroup>
-										<Avatar size="lg" style={{ justifyContent: "center", alignItems: "center" }}><Image alt="rice emoji" src="/public/rice.png" fit="cover" w="60%" /></Avatar>
-										<Avatar size="lg" style={{ justifyContent: "center", alignItems: "center", zIndex: 100 }}><Image alt="meat emoji" src="/public/meat.png" fit="cover" w="60%" /></Avatar>
-										<Avatar size="lg" style={{ justifyContent: "center", alignItems: "center"}}><Image alt="cake emoji" src="/public/cake.png" fit="cover" w="60%" /></Avatar>
-									</AvatarGroup>
-								</Group>
-								<DishForm plid={plid} closeModal={close} attendee={currentAttendee} />
+									<Modal size="md" opened={viewProgressModalOpened} padding={0} onClose={viewProgressModalHandlers.close} title={<Text size="lg" fw="bold">Checklist Progress</Text>}>
+										<Stack justify="center" w="100%">
+											{Array.from(categoryProgress).map(([category, progress]) => (
+												<CategoryProgressStats category={category} progress={progress} />
+											))}
+										</Stack>
+									</Modal>
+
+									<Modal opened={addDishModalOpened} padding={0} onClose={addDishModalHandlers.close} title={<Text size="lg" fw="bold">Add a dish</Text>} bg="var(--bg-primary)">
+										{currentAttendee && (
+											<>
+											<Group justify="center" w="100%">
+											<AvatarGroup>
+												<Avatar size="lg" style={{ justifyContent: "center", alignItems: "center" }}><Image alt="rice emoji" src="/public/rice.png" fit="cover" w="60%" /></Avatar>
+												<Avatar size="lg" style={{ justifyContent: "center", alignItems: "center", zIndex: 100 }}><Image alt="meat emoji" src="/public/meat.png" fit="cover" w="60%" /></Avatar>
+												<Avatar size="lg" style={{ justifyContent: "center", alignItems: "center" }}><Image alt="cake emoji" src="/public/cake.png" fit="cover" w="60%" /></Avatar>
+											</AvatarGroup>
+										</Group>
+										<DishForm plid={plid} closeModal={addDishModalHandlers.close} categoryProgress={categoryProgress} />
+										</>
+										)}
+										{!currentAttendee && (
+											<AttendeeForm closeModal={addDishModalHandlers.close} setCurrentAttendee={setCurrentAttendee} />
+										)}
+									</Modal>
 								</>
-							)}
-							{!currentAttendee && (
-								<AttendeeForm closeModal={close} setCurrentAttendee={setCurrentAttendee} />
-							)}
-							
-							</Modal>
-							
+							}
 
 							<Grid
 								justify="center"    // Centers the grid horizontally
@@ -154,7 +230,7 @@ function RouteComponent() {
 												<Accordion.Control
 													icon={<IconUsers size={22} stroke={1.5} color="var(--mantine-color-dimmed)" />}
 												>
-													{attendeeNames.length} people joined this event
+													{attendeeNames.length} {attendeeNames.length == 1 ? "person" : "people"} joined this event
 												</Accordion.Control>
 												<Accordion.Panel>
 													<Group>
@@ -172,14 +248,14 @@ function RouteComponent() {
 																))}
 
 															{ // Toggle expanded or minmized view of attendees
-																attendeesExpanded ? 
+																attendeesExpanded ?
 																	<UnstyledButton onClick={showLessAttendees}>
 																		<Avatar>
-																		<IconEyeOff size={16}/>
+																			<IconEyeOff size={16} />
 
 																		</Avatar>
 																	</UnstyledButton>
-																:
+																	:
 																	<Tooltip
 																		withArrow
 																		label={attendeeNames.slice(8, -1).join(", ")}
@@ -191,7 +267,7 @@ function RouteComponent() {
 																		</UnstyledButton>
 																	</Tooltip>
 															}
-														
+
 														</>
 													</Group>
 												</Accordion.Panel>
@@ -243,13 +319,13 @@ function RouteComponent() {
 														</Button>
 													)}
 												</CopyButton>
-												<Button onClick={open} color="var(--bg-input-dark)" bd="2px solid var(--border-primary)">Add a Dish</Button>
+												<Button onClick={addDishModalHandlers.open} color="var(--bg-input-dark)" bd="2px solid var(--border-primary)">Add</Button>
 												{currentAttendee && <Text c="dimmed">as {currentAttendee}</Text>}
 											</Group>
 										</Group>
 
 										<Card withBorder radius="md" p={0}>
-											<Table striped style={transitionStyle}>
+											<Table style={transitionStyle}>
 												<Table.Thead>
 													<Table.Tr>
 														<Table.Th style={{ textAlign: "left" }}>Name</Table.Th>
@@ -300,7 +376,7 @@ function RouteComponent() {
 										<Card.Section withBorder inheritPadding py="md">
 											<Group justify="space-between">
 												<Text fw="bold" size="xl">Checklist</Text>
-												<Button color="var(--bg-input-dark)">view</Button>
+												<Button disabled={totalProgress?.numRequired == 0} color="var(--bg-input-dark)" onClick={viewProgressModalHandlers.open}>view</Button>
 											</Group>
 										</Card.Section>
 
@@ -309,23 +385,54 @@ function RouteComponent() {
 										</Text>
 
 										<Card.Section inheritPadding mt="xl" pb="md" style={transitionStyle}>
-											<Flex align="end" justify="space-between">
-												<Stack gap={0}>
-													<Flex align="end">
-														<Text size="xl" fw="bolder">6</Text>
-														<Text c="dimmed">/12</Text>
-													</Flex>
-													<Text>completed</Text>
-												</Stack>
+											{totalProgress?.numRequired == 0 ?
+												<Text c="blue">No requirements</Text>
+												:
 
-												<RingProgress
-													roundCaps
-													size={96}
-													thickness={10}
-													transitionDuration={250}
-													sections={[{ value: 50, color: "primaryColor" }]}>
-												</RingProgress>
-											</Flex>
+												<Flex align="end" justify="space-between">
+
+													{totalProgress && (
+														<>
+															<Stack gap={0}>
+																<Flex align="end">
+																	<Text size="xl" fw="bolder">{totalProgress.numCompleted}</Text>
+																	<Text c="dimmed">/{totalProgress.numRequired}</Text>
+																</Flex>
+																<Text>completed</Text>
+															</Stack>
+															<RingProgress
+																roundCaps
+																size={96}
+																thickness={10}
+																transitionDuration={250}
+																sections={[{
+																	value: (totalProgress.numCompleted / totalProgress.numRequired) * 100,
+																	color: (totalProgress.numCompleted >= totalProgress.numRequired) ? "var(--success)" : "yellow"
+																}
+																]}
+																label={
+																	totalProgress.numCompleted >= totalProgress.numRequired ?
+																		<Center>
+																			<ActionIcon color="var(--success)" variant="light" radius="xl" size="xl">
+																				<IconCheck size={22} />
+																			</ActionIcon>
+																		</Center>
+																		:
+																		<Center>
+																			<ActionIcon color="yellow" variant="light" radius="xl" size="xl">
+																				<IconCheck size={22} />
+																			</ActionIcon>
+																		</Center>
+																}
+															>
+															</RingProgress>
+														</>
+
+													)
+													}
+
+												</Flex>
+											}
 										</Card.Section>
 									</Card>
 								</Grid.Col>

@@ -49,6 +49,15 @@ const svg = `<svg width="${GRID_SIZE}" height="${GRID_SIZE}" xmlns="http://www.w
 
 const backgroundImage = `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
 
+/**
+ * A React component that provides a fixed emoji background for the application.
+ * The background is styled with a repeating pattern and adjusts its tile size
+ * based on the screen width (mobile or desktop).
+ *
+ * @param {ReactNode} children - The child components to be rendered within the EmojiBackground.
+ *
+ * @returns {JSX.Element} A wrapper component with a styled background and relative content area.
+ */
 export function EmojiBackground({ children }: { children: ReactNode }) {
 	const theme = useMantineTheme();
 	const isMobile = useMediaQuery(`(max-width: ${theme.breakpoints.sm})`);
