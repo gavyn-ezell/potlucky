@@ -1,23 +1,20 @@
 import { useForm } from "@tanstack/react-form"
 import { Stack, TextInput, Select, Group, Button } from "@mantine/core"
 import { z } from 'zod'
-import { useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { useMutation } from "@tanstack/react-query"
 import { IconCheck, IconX } from "@tabler/icons-react"
 import { notifications } from "@mantine/notifications"
-import { Category, type Dish, type PotluckProgress } from "@/types/types"
+import { Category, type Dish, type DishEntry, type PotluckProgress } from "@/types/types"
 import { getCategoryEmoji } from "@/utils"
 
 
 const defaultDishFormEntry: Dish = {
-	attendee: '',                   // The name of the person who added the dish
 	dish: '',                       // The name of the dish
 	dish_category: Category.Main   // The category of the dish
 }
 
 const formSchema = z.object({
-	attendee: z.string().min(2, 'Attendee name must have at least 2 characters').max(32, 'Attendee name must be at most 32 characters'),
 	dish: z.string().min(1, 'Dish name must not be empty').max(32, 'Dish name must be at most 32 characters'),
 	dish_category: z.enum(Category)
 })
@@ -35,25 +32,18 @@ const formSchema = z.object({
  * @returns {JSX.Element} The rendered DishForm component.
  * ```
  */
-export function DishForm({ plid, categoryProgress, closeModal, }: { plid: string, categoryProgress: Map<Category, PotluckProgress>, closeModal: () => void }) {
+export function DishForm({ plid, categoryProgress, closeModal, attendee }: { plid: string, categoryProgress: Map<Category, PotluckProgress>, closeModal: () => void, attendee: string }) {
 	const queryClient = useQueryClient()
 
-	const [isFocused, setIsFocused] = useState<Record<keyof Dish, boolean>>({
-		attendee: false,
-		dish: false,
-		dish_category: false,
-	});
-	
-
 	const generateComboBoxLabels = () => {
-		const labelsList =  Array<{value: string, label: string}>()
+		const labelsList = Array<{ value: string, label: string }>()
 		categoryProgress.forEach((progress, category) => {
-			const numRequirementsLeft = Math.max(0, progress.numRequired - progress.numCompleted )
-			const labelMessage = `${category} ${getCategoryEmoji(category)} (${progress.numRequired > 0 ? numRequirementsLeft + " left" : "optional"})`
+			const numRequirementsLeft = Math.max(0, progress.numRequired - progress.numCompleted)
+			const labelMessage = `${category} ${getCategoryEmoji(category)} (${progress.numRequired > 0 ? (numRequirementsLeft === 0 ? "Goal met" : numRequirementsLeft + " left") : "Optional"})`
 
 			const label = {
-				value: 	category,
-				label: 	labelMessage,
+				value: category,
+				label: labelMessage,
 			}
 			labelsList.push(label)
 		})
@@ -65,17 +55,16 @@ export function DishForm({ plid, categoryProgress, closeModal, }: { plid: string
 	const form = useForm({
 		defaultValues: defaultDishFormEntry,
 		onSubmit: async ({ value }) => {
-			mutation.mutateAsync(value)
+			mutation.mutateAsync({ ...value, attendee })
 		},
 		validators: {
 			onMount: formSchema,
-			onBlur: formSchema,
 			onChange: formSchema
 		},
 	})
 
 	const mutation = useMutation({
-		mutationFn: async (dish: Dish) => {
+		mutationFn: async (dish: DishEntry) => {
 			try {
 				const response = await fetch(`${import.meta.env.VITE_POTLUCKY_API_URL}/potluck/${plid}/dish`, {
 					method: 'POST',
@@ -123,58 +112,15 @@ export function DishForm({ plid, categoryProgress, closeModal, }: { plid: string
 			form.handleSubmit()
 		}}>
 			<Stack>
-				<form.Field name="attendee">
-					{(field) => {
-						return (
-							<TextInput
-								value={field.state.value}
-								label="Attendee"
-								onFocus={() => setIsFocused({
-									attendee: true,
-									dish: false,
-									dish_category: false,
-								})}
-								onChange={(e) => field.handleChange(e.target.value)}
-								onBlur={() => {
-									setIsFocused({
-										attendee: false,
-										dish: false,
-										dish_category: false,
-									})
-									field.handleBlur()
-								}}
-								error={!isFocused['attendee']
-									&& field.state.meta.isDirty
-									&& !field.state.meta.isValid
-									? field.state.meta.errors[0]?.message
-									: null}
-								placeholder={field.state.meta.isTouched ? undefined : 'Who is bringing the dish?'}
-							/>
-						)
-					}}
-				</form.Field>
 				<form.Field name="dish">
 					{(field) => {
 						return (
 							<TextInput
 								value={field.state.value}
 								label="Dish"
-								onFocus={() => setIsFocused({
-									attendee: false,
-									dish: true,
-									dish_category: false,
-								})}
 								onChange={(e) => field.handleChange(e.target.value)}
-								onBlur={() => {
-									setIsFocused({
-										attendee: false,
-										dish: false,
-										dish_category: false,
-									})
-									field.handleBlur()
-								}}
-								error={!isFocused['dish']
-									&& field.state.meta.isDirty
+								onBlur={field.handleBlur}
+								error={field.state.meta.isDirty
 									&& !field.state.meta.isValid
 									? field.state.meta.errors[0]?.message
 									: null}
@@ -193,34 +139,23 @@ export function DishForm({ plid, categoryProgress, closeModal, }: { plid: string
 								data={generateComboBoxLabels()}
 								comboboxProps={{ transitionProps: { transition: 'pop', duration: 200 } }}
 								onChange={(value) => field.handleChange(value as Dish['dish_category'])}
-								onFocus={() => setIsFocused({
-									attendee: false,
-									dish: false,
-									dish_category: true,
-								})}
-								onBlur={() => {
-									setIsFocused({
-										attendee: false,
-										dish: false,
-										dish_category: false,
-									})
-									field.handleBlur()
-								}}
+								onBlur={field.handleBlur}
+								allowDeselect={false}
 							/>
 						)
 					}}
 				</form.Field>
 				<form.Subscribe
-					selector={(state) => [state.canSubmit]}
+					selector={(state) => [state.canSubmit, state.isPristine]}
 				>
-					{([canSubmit]) => (
+					{([canSubmit, isPristine]) => (
 						<Group justify="flex-end" mt="md">
 							<Button
 								type="submit"
 								size="md"
 								fullWidth
 								loading={mutation.isPending}
-								disabled={!canSubmit}
+								disabled={!canSubmit || isPristine || mutation.isPending}
 							>
 								Create
 							</Button>
