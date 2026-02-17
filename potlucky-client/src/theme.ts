@@ -79,7 +79,6 @@ export const mantineTheme: MantineThemeOverride = createTheme({
     "5xl": rem("40px"),
     "6xl": rem("44px"),
   },
-
   colors: {
     primaryColor,
   },

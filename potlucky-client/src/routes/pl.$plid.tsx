@@ -4,7 +4,7 @@ import { useDisclosure } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import dayjs from "dayjs"
-import { IconCheck, IconUsers, IconTrash, IconEyeOff, IconX } from "@tabler/icons-react"
+import { IconCheck, IconUsers, IconTrash, IconEyeOff, IconX, IconPlus } from "@tabler/icons-react"
 import { DishForm } from "@/components/DishForm"
 import { Category, type PotluckDataResponse, type PotluckProgress } from "@/types/types"
 import { useEffect, useMemo, useState } from "react"
@@ -196,8 +196,8 @@ function RouteComponent() {
 				timingFunction="ease"
 			>
 				{(transitionStyle) => (
-					<>
-						<Container size="xxl" mt={80}>
+					<Center>
+						<Container size="xxl" mt={100}>
 
 							{categoryProgress &&
 								<>
@@ -229,255 +229,260 @@ function RouteComponent() {
 								</>
 							}
 
-							<Grid
-								justify="center"    // Centers the grid horizontally
-								gutter="lg"         // Adds spacing between grid columns
-								style={{ width: "100%", margin: "auto" }} // Ensures the grid spans the full width 
-							>
-								<Grid.Col span={3}>
-									<Stack>
-										<Card withBorder>
-											<Card.Section inheritPadding py="md" style={transitionStyle}>
-												<Text fw="bold" size="xl">{potluck?.name}</Text>
-												<Group justify="space-between" style={transitionStyle}>
-													<Text size="xs" c="var(--orange-primary)">
-														{dayjs(potluck?.datetime).format('MMM D, YYYY')} |  {dayjs(potluck?.datetime).format('h:mm A')}
-													</Text>
-												</Group>
+							<Center inline mx="auto">
+								<Grid
+									w={{xs: "100%"}}
+									mx="auto"
+								>
+									<Grid.Col span={3}>
+										<Stack>
+											<Card withBorder>
+												<Card.Section inheritPadding py="md" style={transitionStyle}>
+													<Text fw="bold" size="xl">{potluck?.name}</Text>
+													<Group justify="space-between" style={transitionStyle}>
+														<Text size="xs" c="var(--orange-primary)">
+															{dayjs(potluck?.datetime).format('MMM D, YYYY')} |  {dayjs(potluck?.datetime).format('h:mm A')}
+														</Text>
+													</Group>
 
+												</Card.Section>
+
+												<Spoiler maxHeight={72} showLabel={<Text mt="sm" size="sm">view more</Text>} hideLabel={<Text mt="sm" size="sm">hide</Text>} style={transitionStyle}>
+													<Text mt="sm" c="dimmed" size="sm">{potluck?.information}</Text>
+												</Spoiler>
+											</Card>
+
+											<Accordion variant="filled" radius="md" bd="2px solid var(--border-primary)" bdrs="md">
+												<Accordion.Item value="photos" style={transitionStyle}>
+													<Accordion.Control
+														icon={<IconUsers size={22} stroke={1.5} color="var(--mantine-color-dimmed)" />}
+													>
+														{attendeeNames.length} {attendeeNames.length == 1 ? "person" : "people"} joined this potluck
+													</Accordion.Control>
+													<Accordion.Panel>
+														<Group>
+															<>
+																{
+																	viewableAttendees.map((name) => (
+																		<Tooltip
+																			key={name}
+																			withArrow
+																			label={name}
+																			bg="var(--bg-primary)"
+																			color="var(--text-light)"
+																		>
+																			<Avatar name={name} color="initials" allowedInitialsColors={['blue', 'red', 'orange']} />
+																		</Tooltip>
+																	))}
+
+																{ // Toggle expanded or minmized view of attendees
+																	attendeesExpanded ?
+																		<UnstyledButton onClick={showLessAttendees}>
+																			<Avatar>
+																				<IconEyeOff size={16} />
+																			</Avatar>
+																		</UnstyledButton>
+																		:
+																		<Tooltip
+																			withArrow
+																			label={attendeeNames.slice(8, -1).join(", ")}
+																			bg="var(--bg-primary)"
+																			color="var(--text-light)"
+																		>
+																			<UnstyledButton onClick={(showMoreAttendees)}>
+																				<Avatar>+{attendeeNames.slice(8, -1).length}</Avatar>
+																			</UnstyledButton>
+																		</Tooltip>
+																}
+
+															</>
+														</Group>
+													</Accordion.Panel>
+												</Accordion.Item>
+											</Accordion>
+										</Stack>
+									</Grid.Col>
+
+									<Grid.Col span={6}>
+										<Stack>
+											<Group align="center" justify="space-between">
+												<Tabs variant="pills" defaultValue="1" value={activeTab} onChange={setActiveTab} p={2}>
+													<Tabs.List grow>
+														<Tabs.Tab value="1" color="var(--bg-input-dark)" >
+															<Text size="xs">Main</Text>
+														</Tabs.Tab>
+														<Tabs.Tab value="2" color="var(--bg-input-dark)">
+															Sides
+														</Tabs.Tab>
+														<Tabs.Tab value="3" color="var(--bg-input-dark)">
+															Drinks
+														</Tabs.Tab>
+														<Tabs.Tab value="4" color="var(--bg-input-dark)">
+															Desserts
+														</Tabs.Tab>
+														<Tabs.Tab value="5" color="var(--bg-input-dark)">
+															Other
+														</Tabs.Tab>
+													</Tabs.List>
+												</Tabs>
+
+												<Group>
+													<CopyButton value={typeof window !== 'undefined' ? window.location.href : ''}>
+														{({ copy }) => (
+															<Button
+																size="xs"
+																radius="md"
+																color="primaryColor"
+																onClick={() => {
+																	copy()
+																	notifications.show({
+																		radius: "md",
+																		color: "var(--success",
+																		title: 'Link copied!',
+																		message: 'Share this link with your friends to plan dishes!',
+																		icon: <IconCheck size={16} />,
+																	})
+																}}
+															>
+																Share
+															</Button>
+														)}
+													</CopyButton>
+													<Button size="xs" radius="md" onClick={addDishModalHandlers.open} color="var(--bg-input-dark)" bd="2px solid var(--border-primary)">
+														<IconPlus size={16}/>
+													</Button>
+													{currentAttendee && <Text c="dimmed">as {currentAttendee}</Text>}
+												</Group>
+											</Group>
+
+											<Card withBorder radius="md" p={0}>
+												<Table style={transitionStyle}>
+													<Table.Thead>
+														<Table.Tr>
+															<Table.Th style={{ textAlign: "left" }}>Name</Table.Th>
+															<Table.Th style={{ textAlign: "center" }}>Item</Table.Th>
+															<Table.Th style={{ textAlign: "right" }}>Action</Table.Th>
+														</Table.Tr>
+													</Table.Thead>
+													<Table.Tbody>
+														{Object.keys(potluck?.dishes || {}).length > 0 ? (
+															Object.entries(potluck?.dishes || {})
+																.sort(([, a], [, b]) => {
+																	const order = ['main', 'side', 'dessert', 'drinks', 'other'];
+																	const aIndex = order.indexOf(String(a.dish_category).toLowerCase());
+																	const bIndex = order.indexOf(String(b.dish_category)?.toLowerCase());
+																	return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
+																})
+																// Map a list of [key, value] pairs. Each key encodes a 
+																// dish's unique uuid. The value is the Dish data itself.
+																.map(([dishId, dish]) => (
+																	<Table.Tr key={dishId}>
+																		<Table.Td style={{ textAlign: "left", width: "33.33%" }} c="dimmed">{dish.attendee}</Table.Td>
+																		<Table.Td style={{ textAlign: "center", width: "33.33%" }} c="dimmed">{dish.dish}</Table.Td>
+																		<Table.Td style={{ textAlign: "right", width: "33.33%" }} c="dimmed">
+																			{currentAttendee == dish.attendee && (
+																				<Menu width={100} position="bottom-start">
+																					<Menu.Target>
+																						<UnstyledButton>
+																							<IconTrash size={16} />
+																						</UnstyledButton>
+																					</Menu.Target>
+																					<Menu.Dropdown>
+																						<Menu.Item disabled={deleteDishMutation.isPending} onClick={() => deleteDishMutation.mutateAsync(dishId)}>
+																							Delete
+																						</Menu.Item>
+																					</Menu.Dropdown>
+																				</Menu>
+																			)}
+																		</Table.Td>
+																	</Table.Tr>
+																))
+														) : (
+															<Table.Tr>
+																<Table.Td colSpan={3}>
+																	<Text c="dimmed" fs="italic" ta="center" size="sm">
+																		No dishes added yet. Be the first!
+																	</Text>
+																</Table.Td>
+															</Table.Tr>
+														)}
+													</Table.Tbody>
+												</Table>
+											</Card>
+											<Flex justify="end"><Text>x main items</Text></Flex>
+										</Stack>
+									</Grid.Col>
+
+									<Grid.Col span={3}>
+										<Card withBorder>
+											<Card.Section withBorder inheritPadding py="md">
+												<Group justify="space-between">
+													<Text fw="bold" size="xl">Dish Goals</Text>
+													<Button disabled={totalProgress?.numRequired == 0} color="var(--bg-input-dark)" onClick={viewProgressModalHandlers.open}>view</Button>
+												</Group>
 											</Card.Section>
 
-											<Spoiler maxHeight={72} showLabel={<Text mt="sm" size="sm">view more</Text>} hideLabel={<Text mt="sm" size="sm">hide</Text>} style={transitionStyle}>
-												<Text mt="sm" c="dimmed" size="sm">{potluck?.information}</Text>
-											</Spoiler>
+											<Text mt="sm" c="dimmed" size="sm">
+												To help keep track of what else needs to be brought, use this as a reference.
+											</Text>
+
+											<Card.Section inheritPadding mt="xl" pb="md" style={transitionStyle}>
+												{totalProgress?.numRequired == 0 ?
+													<Text c="blue">No dish goals.</Text>
+													:
+
+													<Flex align="end" justify="space-between">
+
+														{totalProgress && (
+															<>
+																<Stack gap={0}>
+																	<Flex align="end">
+																		<Text size="xl" fw="bolder">{totalProgress.numCompleted}</Text>
+																		<Text c="dimmed">/{totalProgress.numRequired}</Text>
+																	</Flex>
+																	<Text>completed</Text>
+																</Stack>
+																<RingProgress
+																	roundCaps
+																	size={96}
+																	thickness={10}
+																	transitionDuration={250}
+																	sections={[{
+																		value: (totalProgress.numCompleted / totalProgress.numRequired) * 100,
+																		color: (totalProgress.numCompleted >= totalProgress.numRequired) ? "var(--success)" : "yellow"
+																	}
+																	]}
+																	label={
+																		totalProgress.numCompleted >= totalProgress.numRequired ?
+																			<Center>
+																				<ActionIcon color="var(--success)" variant="light" radius="xl" size="xl">
+																					<IconCheck size={22} />
+																				</ActionIcon>
+																			</Center>
+																			:
+																			<Center>
+																				<ActionIcon color="yellow" variant="light" radius="xl" size="xl">
+																					<IconCheck size={22} />
+																				</ActionIcon>
+																			</Center>
+																	}
+																>
+																</RingProgress>
+															</>
+
+														)
+														}
+
+													</Flex>
+												}
+											</Card.Section>
 										</Card>
+									</Grid.Col>
+								</Grid>
+							</Center>
 
-										<Accordion variant="filled" radius="md" bd="2px solid var(--border-primary)" bdrs="md">
-											<Accordion.Item value="photos" style={transitionStyle}>
-												<Accordion.Control
-													icon={<IconUsers size={22} stroke={1.5} color="var(--mantine-color-dimmed)" />}
-												>
-													{attendeeNames.length} {attendeeNames.length == 1 ? "person" : "people"} joined this potluck
-												</Accordion.Control>
-												<Accordion.Panel>
-													<Group>
-														<>
-															{
-																viewableAttendees.map((name) => (
-																	<Tooltip
-																		key={name}
-																		withArrow
-																		label={name}
-																		bg="var(--bg-primary)"
-																		color="var(--text-light)"
-																	>
-																		<Avatar name={name} color="initials" allowedInitialsColors={['blue', 'red', 'orange']} />
-																	</Tooltip>
-																))}
-
-															{ // Toggle expanded or minmized view of attendees
-																attendeesExpanded ?
-																	<UnstyledButton onClick={showLessAttendees}>
-																		<Avatar>
-																			<IconEyeOff size={16} />
-
-																		</Avatar>
-																	</UnstyledButton>
-																	:
-																	<Tooltip
-																		withArrow
-																		label={attendeeNames.slice(8, -1).join(", ")}
-																		bg="var(--bg-primary)"
-																		color="var(--text-light)"
-																	>
-																		<UnstyledButton onClick={(showMoreAttendees)}>
-																			<Avatar>+{attendeeNames.slice(8, -1).length}</Avatar>
-																		</UnstyledButton>
-																	</Tooltip>
-															}
-
-														</>
-													</Group>
-												</Accordion.Panel>
-											</Accordion.Item>
-										</Accordion>
-									</Stack>
-								</Grid.Col>
-
-								<Grid.Col span={5}>
-									<Stack>
-										<Group align="center" justify="space-between">
-											<Tabs variant="pills" defaultValue="1" value={activeTab} onChange={setActiveTab} py={3} px="sm">
-												<Tabs.List justify="space-between">
-													<Tabs.Tab value="1" color="var(--bg-input-dark)" >
-														Main
-													</Tabs.Tab>
-													<Tabs.Tab value="2" color="var(--bg-input-dark)">
-														Sides
-													</Tabs.Tab>
-													<Tabs.Tab value="3" color="var(--bg-input-dark)">
-														Drinks
-													</Tabs.Tab>
-													<Tabs.Tab value="4" color="var(--bg-input-dark)">
-														Desserts
-													</Tabs.Tab>
-													<Tabs.Tab value="5" color="var(--bg-input-dark)">
-														Other
-													</Tabs.Tab>
-												</Tabs.List>
-											</Tabs>
-
-											<Group>
-												<CopyButton value={typeof window !== 'undefined' ? window.location.href : ''}>
-													{({ copy }) => (
-														<Button
-															color="primaryColor"
-															onClick={() => {
-																copy()
-																notifications.show({
-																	radius: "md",
-																	color: "var(--success",
-																	title: 'Link copied!',
-																	message: 'Share this link with your friends to plan dishes!',
-																	icon: <IconCheck size={16} />,
-																})
-															}}
-														>
-															Share
-														</Button>
-													)}
-												</CopyButton>
-												<Button onClick={addDishModalHandlers.open} color="var(--bg-input-dark)" bd="2px solid var(--border-primary)">Add</Button>
-												{currentAttendee && <Text c="dimmed">as {currentAttendee}</Text>}
-											</Group>
-										</Group>
-
-										<Card withBorder radius="md" p={0}>
-											<Table style={transitionStyle}>
-												<Table.Thead>
-													<Table.Tr>
-														<Table.Th style={{ textAlign: "left" }}>Name</Table.Th>
-														<Table.Th style={{ textAlign: "center" }}>Item</Table.Th>
-														<Table.Th style={{ textAlign: "right" }}>Action</Table.Th>
-													</Table.Tr>
-												</Table.Thead>
-												<Table.Tbody>
-													{Object.keys(potluck?.dishes || {}).length > 0 ? (
-														Object.entries(potluck?.dishes || {})
-															.sort(([, a], [, b]) => {
-																const order = ['main', 'side', 'dessert', 'drinks', 'other'];
-																const aIndex = order.indexOf(String(a.dish_category).toLowerCase());
-																const bIndex = order.indexOf(String(b.dish_category)?.toLowerCase());
-																return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
-															})
-															// Map a list of [key, value] pairs. Each key encodes a 
-															// dish's unique uuid. The value is the Dish data itself.
-															.map(([dishId, dish]) => (
-																<Table.Tr key={dishId}>
-																	<Table.Td style={{ textAlign: "left", width: "33.33%" }} c="dimmed">{dish.attendee}</Table.Td>
-																	<Table.Td style={{ textAlign: "center", width: "33.33%" }} c="dimmed">{dish.dish}</Table.Td>
-																	<Table.Td style={{ textAlign: "right", width: "33.33%" }} c="dimmed">
-																		{currentAttendee == dish.attendee && (
-																			<Menu width={100} position="bottom-start">
-																				<Menu.Target>
-																					<UnstyledButton>
-																						<IconTrash size={16} />
-																					</UnstyledButton>
-																				</Menu.Target>
-																				<Menu.Dropdown>
-																					<Menu.Item disabled={deleteDishMutation.isPending} onClick={() => deleteDishMutation.mutateAsync(dishId)}>
-																						Delete
-																					</Menu.Item>
-																				</Menu.Dropdown>
-																			</Menu>
-																		)}
-																	</Table.Td>
-																</Table.Tr>
-															))
-													) : (
-														<Table.Tr>
-															<Table.Td colSpan={3}>
-																<Text c="dimmed" fs="italic" ta="center" size="sm">
-																	No dishes added yet. Be the first!
-																</Text>
-															</Table.Td>
-														</Table.Tr>
-													)}
-												</Table.Tbody>
-											</Table>
-										</Card>
-										<Flex justify="end"><Text>x main items</Text></Flex>
-									</Stack>
-								</Grid.Col>
-
-								<Grid.Col span={3}>
-									<Card withBorder>
-										<Card.Section withBorder inheritPadding py="md">
-											<Group justify="space-between">
-												<Text fw="bold" size="xl">Dish Goals</Text>
-												<Button disabled={totalProgress?.numRequired == 0} color="var(--bg-input-dark)" onClick={viewProgressModalHandlers.open}>view</Button>
-											</Group>
-										</Card.Section>
-
-										<Text mt="sm" c="dimmed" size="sm">
-											To help keep track of what else needs to be brought, use this as a reference.
-										</Text>
-
-										<Card.Section inheritPadding mt="xl" pb="md" style={transitionStyle}>
-											{totalProgress?.numRequired == 0 ?
-												<Text c="blue">No dish goals.</Text>
-												:
-
-												<Flex align="end" justify="space-between">
-
-													{totalProgress && (
-														<>
-															<Stack gap={0}>
-																<Flex align="end">
-																	<Text size="xl" fw="bolder">{totalProgress.numCompleted}</Text>
-																	<Text c="dimmed">/{totalProgress.numRequired}</Text>
-																</Flex>
-																<Text>completed</Text>
-															</Stack>
-															<RingProgress
-																roundCaps
-																size={96}
-																thickness={10}
-																transitionDuration={250}
-																sections={[{
-																	value: (totalProgress.numCompleted / totalProgress.numRequired) * 100,
-																	color: (totalProgress.numCompleted >= totalProgress.numRequired) ? "var(--success)" : "yellow"
-																}
-																]}
-																label={
-																	totalProgress.numCompleted >= totalProgress.numRequired ?
-																		<Center>
-																			<ActionIcon color="var(--success)" variant="light" radius="xl" size="xl">
-																				<IconCheck size={22} />
-																			</ActionIcon>
-																		</Center>
-																		:
-																		<Center>
-																			<ActionIcon color="yellow" variant="light" radius="xl" size="xl">
-																				<IconCheck size={22} />
-																			</ActionIcon>
-																		</Center>
-																}
-															>
-															</RingProgress>
-														</>
-
-													)
-													}
-
-												</Flex>
-											}
-										</Card.Section>
-									</Card>
-								</Grid.Col>
-							</Grid>
 						</Container>
-					</>
+					</Center>
 				)}
 			</Transition>
 		</>

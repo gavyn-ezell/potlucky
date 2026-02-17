@@ -18,6 +18,10 @@
   src: url("./fonts/Geist-Regular.woff2") format("woff2");
 }
 
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   margin: 0;
   -webkit-font-smoothing: antialiased;

@@ -137,7 +137,7 @@ function MainPage() {
         alignItems: "center",
       }}
     >
-      <Paper w={{ base: "100%", xs: "380px" }}>
+      <Paper w={{ base: "100%", xs: "380px" }} mt={40}>
         <header>
           <Text size="lg" ta="left" mb="lg" fw="bold" mr="xl">
             Start planning your potluck!
