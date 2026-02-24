@@ -1,4 +1,4 @@
-import { type Dish } from "@/types/types"
+import { type DishEntry } from "@/types/types"
 import { Paper, Group, Stack, Text } from "@mantine/core"
 
 export const CATEGORY_CONFIG: Record<string, { color: string; emoji: string }> = {
@@ -17,10 +17,8 @@ export const CATEGORY_CONFIG: Record<string, { color: string; emoji: string }> =
  * @param {string} dish - The name of the dish.
  * @param {string} attendee - The name of the attendee who brought the dish.
  * @param {string} dish_category - The category of the dish, used to determine the label's color and emoji.
- *
- * @returns {JSX.Element} A styled row displaying the dish information.
  */
-export function DishRow({ dish, attendee, dish_category }: Dish) {
+export function DishRow({ dish, dish_category, attendee }: DishEntry) {
 	const config = CATEGORY_CONFIG[dish_category.toLowerCase()] || CATEGORY_CONFIG.other
 
 	return (
