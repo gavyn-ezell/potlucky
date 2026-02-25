@@ -1,10 +1,10 @@
 import { createFileRoute, redirect } from "@tanstack/react-router"
-import { Container, Text, Stack, Group, CopyButton, Button, Flex, Modal, Grid, Card, RingProgress, Table, Tabs, Accordion, UnstyledButton, Avatar, Tooltip, Spoiler, LoadingOverlay, Transition, AvatarGroup, Image, ActionIcon, Center, Menu } from "@mantine/core"
+import { Container, Text, Stack, Group, CopyButton, Button, Flex, Modal, Grid, Card, RingProgress, Table, Tabs, Accordion, UnstyledButton, Avatar, Tooltip, Spoiler, LoadingOverlay, Transition, AvatarGroup, Image, ActionIcon, Center, Menu, Combobox, InputBase, useCombobox } from "@mantine/core"
 import { useDisclosure } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import dayjs from "dayjs"
-import { IconCheck, IconUsers, IconTrash, IconEyeOff, IconX, IconPlus } from "@tabler/icons-react"
+import { IconCheck, IconUsers, IconTrash, IconEyeOff, IconX, IconShare } from "@tabler/icons-react"
 import { DishForm } from "@/components/DishForm"
 import { Category, type PotluckDataResponse, type PotluckProgress } from "@/types/types"
 import { useEffect, useMemo, useState } from "react"
@@ -113,7 +113,11 @@ function RouteComponent() {
 	const [addDishModalOpened, addDishModalHandlers] = useDisclosure(false);
 	const [viewProgressModalOpened, viewProgressModalHandlers] = useDisclosure(false);
 
-	const [activeTab, setActiveTab] = useState<string | null>('1');
+	const combobox = useCombobox({
+		onDropdownClose: () => combobox.resetSelectedOption(),
+	});
+
+	const [activeTab, setActiveTab] = useState<Category | "all">("all");
 	const [currentAttendee, setCurrentAttendee] = useState<string | null>(null);
 	const [attendeesExpanded, setAttendeesExpanded] = useState<boolean>(false);
 	const [viewableAttendees, setViewableAttendees] = useState<string[]>([]);
@@ -149,7 +153,7 @@ function RouteComponent() {
 				message: 'Failed to delete dish!',
 				icon: <IconX size={16} />,
 			})
-			
+
 		}
 	})
 
@@ -231,7 +235,7 @@ function RouteComponent() {
 
 							<Center inline mx="auto">
 								<Grid
-									w={{xs: "100%"}}
+									w={{ xs: "100%" }}
 									mx="auto"
 								>
 									<Grid.Col span={3}>
@@ -306,30 +310,44 @@ function RouteComponent() {
 									<Grid.Col span={6}>
 										<Stack>
 											<Group align="center" justify="space-between">
-												<Tabs variant="pills" defaultValue="1" value={activeTab} onChange={setActiveTab} p={2}>
-													<Tabs.List grow>
-														<Tabs.Tab value="1" color="var(--bg-input-dark)" >
-															<Text size="xs">Main</Text>
-														</Tabs.Tab>
-														<Tabs.Tab value="2" color="var(--bg-input-dark)">
-															Sides
-														</Tabs.Tab>
-														<Tabs.Tab value="3" color="var(--bg-input-dark)">
-															Drinks
-														</Tabs.Tab>
-														<Tabs.Tab value="4" color="var(--bg-input-dark)">
-															Desserts
-														</Tabs.Tab>
-														<Tabs.Tab value="5" color="var(--bg-input-dark)">
-															Other
-														</Tabs.Tab>
-													</Tabs.List>
-												</Tabs>
+												<Combobox
+													store={combobox}
+													onOptionSubmit={(val) => {
+														setActiveTab(val as (Category | "all"));
+														combobox.closeDropdown();
+													}}
+												>
+													<Combobox.Target>
+														<InputBase
+															component="button"
+															type="button"
+															style={{ width: "100px" }}
+															pointer
+															rightSection={<Combobox.Chevron />}
+															rightSectionPointerEvents="none"
+															onClick={() => combobox.toggleDropdown()}
+														>
+															{activeTab.charAt(0).toUpperCase() + activeTab.slice(1) + (["main", "side", "dessert"].includes(activeTab) ? "s" : "")}
+														</InputBase>
+													</Combobox.Target>
+
+													<Combobox.Dropdown>
+														<Combobox.Options>
+															<Combobox.Option value="all" key="all">All</Combobox.Option>
+															{Object.values(Category).map((cat) => (
+																<Combobox.Option value={cat} key={cat}>
+																	{cat.charAt(0).toUpperCase() + cat.slice(1) + (["main", "side", "dessert"].includes(cat) ? "s" : "")}
+																</Combobox.Option>
+															))}
+														</Combobox.Options>
+													</Combobox.Dropdown>
+												</Combobox>
 
 												<Group>
 													<CopyButton value={typeof window !== 'undefined' ? window.location.href : ''}>
 														{({ copy }) => (
 															<Button
+																style={{ padding: 6 }}
 																size="xs"
 																radius="md"
 																color="primaryColor"
@@ -344,14 +362,15 @@ function RouteComponent() {
 																	})
 																}}
 															>
+																<IconShare style={{ marginRight: 6 }} size={14} />
 																Share
 															</Button>
 														)}
 													</CopyButton>
 													<Button size="xs" radius="md" onClick={addDishModalHandlers.open} color="var(--bg-input-dark)" bd="2px solid var(--border-primary)">
-														<IconPlus size={16}/>
+														Add Dish
 													</Button>
-													{currentAttendee && <Text c="dimmed">as {currentAttendee}</Text>}
+													{/* {currentAttendee && <Text c="var(--orange-primary)">as {currentAttendee}</Text>} */}
 												</Group>
 											</Group>
 
@@ -359,14 +378,15 @@ function RouteComponent() {
 												<Table style={transitionStyle}>
 													<Table.Thead>
 														<Table.Tr>
-															<Table.Th style={{ textAlign: "left" }}>Name</Table.Th>
-															<Table.Th style={{ textAlign: "center" }}>Item</Table.Th>
+															<Table.Th style={{ textAlign: "left" }}>Dish</Table.Th>
+															<Table.Th style={{ textAlign: "center" }}>Attendee</Table.Th>
 															<Table.Th style={{ textAlign: "right" }}>Action</Table.Th>
 														</Table.Tr>
 													</Table.Thead>
 													<Table.Tbody>
 														{Object.keys(potluck?.dishes || {}).length > 0 ? (
 															Object.entries(potluck?.dishes || {})
+																.filter(([, dish]) => activeTab === "all" || dish.dish_category === activeTab)
 																.sort(([, a], [, b]) => {
 																	const order = ['main', 'side', 'dessert', 'drinks', 'other'];
 																	const aIndex = order.indexOf(String(a.dish_category).toLowerCase());
@@ -377,8 +397,8 @@ function RouteComponent() {
 																// dish's unique uuid. The value is the Dish data itself.
 																.map(([dishId, dish]) => (
 																	<Table.Tr key={dishId}>
-																		<Table.Td style={{ textAlign: "left", width: "33.33%" }} c="dimmed">{dish.attendee}</Table.Td>
-																		<Table.Td style={{ textAlign: "center", width: "33.33%" }} c="dimmed">{dish.dish}</Table.Td>
+																		<Table.Td c="var(--orange-primary)" style={{ textAlign: "left", width: "33.33%" }}>{dish.dish}</Table.Td>
+																		<Table.Td style={{ textAlign: "center", width: "33.33%" }} c="dimmed">{dish.attendee}</Table.Td>
 																		<Table.Td style={{ textAlign: "right", width: "33.33%" }} c="dimmed">
 																			{currentAttendee == dish.attendee && (
 																				<Menu width={100} position="bottom-start">
@@ -409,7 +429,16 @@ function RouteComponent() {
 													</Table.Tbody>
 												</Table>
 											</Card>
-											<Flex justify="end"><Text>x main items</Text></Flex>
+
+											<Flex justify="end">
+												<Text size="sm" c="dimmed">
+													{(() => {
+														const count = Object.values(potluck?.dishes || {}).filter(d => activeTab === "all" || d.dish_category === activeTab).length;
+														const label = activeTab === "all" ? (count !== 1 ? "dishes" : "dish") : activeTab;
+														return `${count} ${label}${activeTab !== "all" && count !== 1 ? "s" : ""}`;
+													})()}
+												</Text>
+											</Flex>
 										</Stack>
 									</Grid.Col>
 
@@ -482,9 +511,10 @@ function RouteComponent() {
 							</Center>
 
 						</Container>
-					</Center>
-				)}
-			</Transition>
+					</Center >
+				)
+				}
+			</Transition >
 		</>
 	)
 }
