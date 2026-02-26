@@ -343,35 +343,39 @@ function RouteComponent() {
 													</Combobox.Dropdown>
 												</Combobox>
 
-												<Group>
-													<CopyButton value={typeof window !== 'undefined' ? window.location.href : ''}>
-														{({ copy }) => (
-															<Button
-																style={{ padding: 6 }}
-																size="xs"
-																radius="md"
-																color="primaryColor"
-																onClick={() => {
-																	copy()
-																	notifications.show({
-																		radius: "md",
-																		color: "var(--success",
-																		title: 'Link copied!',
-																		message: 'Share this link with your friends to plan dishes!',
-																		icon: <IconCheck size={16} />,
-																	})
-																}}
-															>
-																<IconShare style={{ marginRight: 6 }} size={14} />
-																Share
-															</Button>
-														)}
-													</CopyButton>
-													<Button size="xs" radius="md" onClick={addDishModalHandlers.open} color="var(--bg-input-dark)" bd="2px solid var(--border-primary)">
-														Add Dish
-													</Button>
-													{/* {currentAttendee && <Text c="var(--orange-primary)">as {currentAttendee}</Text>} */}
-												</Group>
+												<Stack gap={4} align="flex-end">
+													{currentAttendee && (
+														<Text size="xs" c="dimmed">Signed in as <Text span size="xs" fw={600} c="var(--orange-primary)">{currentAttendee}</Text></Text>
+													)}
+													<Group>
+														<CopyButton value={typeof window !== 'undefined' ? window.location.href : ''}>
+															{({ copy }) => (
+																<Button
+																	style={{ padding: 6 }}
+																	size="xs"
+																	radius="md"
+																	color="primaryColor"
+																	onClick={() => {
+																		copy()
+																		notifications.show({
+																			radius: "md",
+																			color: "var(--success",
+																			title: 'Link copied!',
+																			message: 'Share this link with your friends to plan dishes!',
+																			icon: <IconCheck size={16} />,
+																		})
+																	}}
+																>
+																	<IconShare style={{ marginRight: 6 }} size={14} />
+																	Share
+																</Button>
+															)}
+														</CopyButton>
+														<Button size="xs" radius="md" onClick={addDishModalHandlers.open} color="var(--bg-input-dark)" bd="2px solid var(--border-primary)">
+															Add Dish
+														</Button>
+													</Group>
+												</Stack>
 											</Group>
 
 											<Card withBorder radius="md" p={0}>
