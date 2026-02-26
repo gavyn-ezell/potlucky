@@ -438,8 +438,8 @@ function RouteComponent() {
 												<Text size="sm" c="dimmed">
 													{(() => {
 														const count = Object.values(potluck?.dishes || {}).filter(d => activeTab === "all" || d.dish_category === activeTab).length;
-														const label = activeTab === "all" ? (count !== 1 ? "dishes" : "dish") : activeTab;
-														return `${count} ${label}${activeTab !== "all" && count !== 1 ? "s" : ""}`;
+
+														return `${count} ${activeTab === "all" ? (count !== 1 ? "dishes" : "dish") : activeTab === "drinks" ? (count === 1 ? "drink" : "drinks") : ["main", "side", "dessert"].includes(activeTab) ? (count !== 1 ? activeTab + "s" : activeTab) : activeTab}`;
 													})()}
 												</Text>
 											</Flex>
