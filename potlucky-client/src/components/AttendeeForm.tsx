@@ -54,7 +54,7 @@ export function AttendeeForm({ closeModal, setCurrentAttendee }: { closeModal: (
 									field.state.meta.errors.length > 0
 										? field.state.meta.errors[0]?.message
 										: null}
-								placeholder={field.state.meta.isTouched ? undefined : 'Who is bringing the dish?'}
+								placeholder={field.state.meta.isTouched ? undefined : 'Full Name'}
 							/>
 						)
 					}}
