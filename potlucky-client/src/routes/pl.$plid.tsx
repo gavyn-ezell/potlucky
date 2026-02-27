@@ -347,11 +347,11 @@ function RouteComponent() {
 													{currentAttendee && (
 														<Text size="xs" c="dimmed">Signed in as <Text span size="xs" fw={600} c="var(--orange-primary)">{currentAttendee}</Text></Text>
 													)}
-													<Group>
+													<Group gap="sm">
 														<CopyButton value={typeof window !== 'undefined' ? window.location.href : ''}>
 															{({ copy }) => (
 																<Button
-																	style={{ padding: 6 }}
+																	style={{ paddingLeft: 10, paddingRight: 10}}
 																	size="xs"
 																	radius="md"
 																	color="primaryColor"
@@ -371,7 +371,7 @@ function RouteComponent() {
 																</Button>
 															)}
 														</CopyButton>
-														<Button size="xs" radius="md" onClick={addDishModalHandlers.open} color="var(--bg-input-dark)" bd="2px solid var(--border-primary)">
+														<Button style={{ paddingLeft: 10, paddingRight: 10}} size="xs" radius="md" onClick={addDishModalHandlers.open} color="var(--bg-input-dark)" bd="2px solid var(--border-primary)">
 															Add Dish
 														</Button>
 													</Group>
