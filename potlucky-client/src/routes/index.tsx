@@ -9,8 +9,9 @@ import {
   Textarea,
   Group,
   NumberInput,
-  Accordion,
+  Modal,
 } from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
 import { DateTimePicker } from "@mantine/dates";
 import { notifications } from "@mantine/notifications";
 import { formOptions, useForm } from "@tanstack/react-form";
@@ -61,6 +62,7 @@ const formOpts = formOptions({
 
 function MainPage() {
   const navigate = useNavigate();
+  const [dishGoalsOpened, dishGoalsHandlers] = useDisclosure(false);
 
   // const [isFocused, setIsFocused] = useState({
   //   'name': false,
@@ -170,7 +172,7 @@ function MainPage() {
                     disabled={mutation.isPending}
                     error={
                       field.state.meta.isBlurred &&
-                      field.state.meta.errors.length > 0
+                        field.state.meta.errors.length > 0
                         ? field.state.meta.errors[0]?.message
                         : null
                     }
@@ -204,7 +206,7 @@ function MainPage() {
                     }}
                     error={
                       field.state.meta.isBlurred &&
-                      field.state.meta.errors.length > 0
+                        field.state.meta.errors.length > 0
                         ? field.state.meta.errors[0]?.message
                         : null
                     }
@@ -233,7 +235,7 @@ function MainPage() {
                     onChange={(e) => field.handleChange(e.target.value)}
                     error={
                       field.state.meta.isBlurred &&
-                      field.state.meta.errors.length > 0
+                        field.state.meta.errors.length > 0
                         ? field.state.meta.errors[0]?.message
                         : null
                     }
@@ -242,96 +244,113 @@ function MainPage() {
               }}
             />
 
-            <Accordion variant="contained">
-              <Accordion.Item value="requirements">
-                <Accordion.Control>
-                  <Text size="sm" fw={500}>
-                    Dish Goals (Optional)
-                  </Text>
-                </Accordion.Control>
-                <Accordion.Panel>
-                  <Stack gap="sm">
-                    <Text size="xs" c="dimmed">
-                      Specify how many dishes you'd prefer at the potluck for
-                      each category.
-                    </Text>
+            <Button
+              variant="light"
+              fullWidth
+              onClick={dishGoalsHandlers.open}
+              disabled={mutation.isPending}
+            >
+              Dish Goals (Optional)
+            </Button>
 
-                    <form.Field
-                      name="requirements"
-                      children={(field) => {
-                        const updateRequirement = (
-                          category: Category,
-                          value: number,
-                        ) => {
-                          field.handleChange({
-                            ...field.state.value,
-                            [category]: value,
-                          });
-                          if (value == 0) {
-                            delete field.state.value[category];
+            <Modal
+              opened={dishGoalsOpened}
+              onClose={dishGoalsHandlers.close}
+              title={
+                <Text size="sm" fw={700}>
+                  Dish Goals
+                </Text>
+              }
+              centered
+            >
+              <Stack gap="sm">
+                <Text size="xs" c="dimmed">
+                  Specify how many dishes you'd prefer at the potluck for
+                  each category.
+                </Text>
+
+                <form.Field
+                  name="requirements"
+                  children={(field) => {
+                    const updateRequirement = (
+                      category: Category,
+                      value: number,
+                    ) => {
+                      field.handleChange({
+                        ...field.state.value,
+                        [category]: value,
+                      });
+                      if (value == 0) {
+                        delete field.state.value[category];
+                      }
+                    };
+
+                    return (
+                      <Stack gap="xs">
+                        <NumberInput
+                          label="🍖 Mains"
+                          placeholder="0"
+                          min={0}
+                          value={field.state.value[Category.Main] || 0}
+                          onChange={(val) =>
+                            updateRequirement(Category.Main, Number(val))
                           }
-                        };
+                          disabled={mutation.isPending}
+                        />
+                        <NumberInput
+                          label="🍚 Sides"
+                          placeholder="0"
+                          min={0}
+                          value={field.state.value[Category.Side] || 0}
+                          onChange={(val) =>
+                            updateRequirement(Category.Side, Number(val))
+                          }
+                          disabled={mutation.isPending}
+                        />
+                        <NumberInput
+                          label="🍰 Desserts"
+                          placeholder="0"
+                          min={0}
+                          value={field.state.value[Category.Dessert] || 0}
+                          onChange={(val) =>
+                            updateRequirement(Category.Dessert, Number(val))
+                          }
+                          disabled={mutation.isPending}
+                        />
+                        <NumberInput
+                          label="🥤 Drinks"
+                          placeholder="0"
+                          min={0}
+                          value={field.state.value[Category.Drinks] || 0}
+                          onChange={(val) =>
+                            updateRequirement(Category.Drinks, Number(val))
+                          }
+                          disabled={mutation.isPending}
+                        />
+                        <NumberInput
+                          label="🍽️ Other"
+                          placeholder="0"
+                          min={0}
+                          value={field.state.value[Category.Other] || 0}
+                          onChange={(val) =>
+                            updateRequirement(Category.Other, Number(val))
+                          }
+                          disabled={mutation.isPending}
+                        />
+                      </Stack>
+                    );
+                  }}
+                />
 
-                        return (
-                          <Stack gap="xs">
-                            <NumberInput
-                              label="🍖 Mains"
-                              placeholder="0"
-                              min={0}
-                              value={field.state.value[Category.Main] || 0}
-                              onChange={(val) =>
-                                updateRequirement(Category.Main, Number(val))
-                              }
-                              disabled={mutation.isPending}
-                            />
-                            <NumberInput
-                              label="🍚 Sides"
-                              placeholder="0"
-                              min={0}
-                              value={field.state.value[Category.Side] || 0}
-                              onChange={(val) =>
-                                updateRequirement(Category.Side, Number(val))
-                              }
-                              disabled={mutation.isPending}
-                            />
-                            <NumberInput
-                              label="🍰 Desserts"
-                              placeholder="0"
-                              min={0}
-                              value={field.state.value[Category.Dessert] || 0}
-                              onChange={(val) =>
-                                updateRequirement(Category.Dessert, Number(val))
-                              }
-                              disabled={mutation.isPending}
-                            />
-                            <NumberInput
-                              label="🥤 Drinks"
-                              placeholder="0"
-                              min={0}
-                              value={field.state.value[Category.Drinks] || 0}
-                              onChange={(val) =>
-                                updateRequirement(Category.Drinks, Number(val))
-                              }
-                              disabled={mutation.isPending}
-                            />
-                            <NumberInput
-                              label="🍽️ Other"
-                              placeholder="0"
-                              min={0}
-                              value={field.state.value[Category.Other] || 0}
-                              onChange={(val) =>
-                                updateRequirement(Category.Other, Number(val))
-                              }
-                              disabled={mutation.isPending}
-                            />
-                          </Stack>
-                        );
-                      }}
-                    />
-                  </Stack>
-                </Accordion.Panel>
-              </Accordion.Item>
-            </Accordion>
+                <Button
+                  fullWidth
+                  mt="sm"
+                  onClick={dishGoalsHandlers.close}
+                >
+                  Done
+                </Button>
+              </Stack>
+            </Modal>
 
             <form.Subscribe
               selector={(state) => [state.canSubmit, state.isPristine]}
