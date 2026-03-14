@@ -190,9 +190,9 @@ function RouteComponent() {
 											<>
 												<Group justify="center" w="100%">
 													<AvatarGroup>
-														<Avatar size="lg" style={{ justifyContent: "center", alignItems: "center" }}><Image alt="rice emoji" src="/public/rice.png" fit="cover" w="60%" /></Avatar>
-														<Avatar size="lg" style={{ justifyContent: "center", alignItems: "center", zIndex: 100 }}><Image alt="meat emoji" src="/public/meat.png" fit="cover" w="60%" /></Avatar>
-														<Avatar size="lg" style={{ justifyContent: "center", alignItems: "center" }}><Image alt="cake emoji" src="/public/cake.png" fit="cover" w="60%" /></Avatar>
+														<Avatar size="lg" style={{ justifyContent: "center", alignItems: "center" }}><Image alt="rice emoji" src="/rice.png" fit="cover" w="60%" /></Avatar>
+														<Avatar size="lg" style={{ justifyContent: "center", alignItems: "center", zIndex: 100 }}><Image alt="meat emoji" src="/meat.png" fit="cover" w="60%" /></Avatar>
+														<Avatar size="lg" style={{ justifyContent: "center", alignItems: "center" }}><Image alt="cake emoji" src="/cake.png" fit="cover" w="60%" /></Avatar>
 													</AvatarGroup>
 												</Group>
 												<DishForm plid={plid} closeModal={addDishModalHandlers.close} categoryProgress={categoryProgress} attendee={currentAttendee} />
