@@ -1,9 +1,29 @@
+:root {
+  --orange-primary: #F97543;
+  --border-primary: #363636;
+  --bg-app: #171717;
+  --bg-primary: #212121;
+  --bg-secondary: #363636;
+  --bg-input-dark: #292929;
+  --text-light: #ececec;
+  --text-dark: #666666;
+  --bg-input-light: #E5E5E5;
+
+  --success: #6DE752;
+  --error: #af0000;
+}
+
+@font-face {
+  font-family: 'Geist';
+  src: url("./fonts/Geist-Regular.woff2") format("woff2");
+}
+
+html {
+  scrollbar-gutter: stable;
+}
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
-    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
-    sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -13,13 +33,7 @@ code {
     monospace;
 }
 
-:root {
-  --orange-primary: #F97543;
-  --border-primary: #363636;
-  --bg-primary: #212121;
-  --bg-secondary: #363636;
-  --bg-input-dark: #292929;
-  --text-light: #E5E5E5;
-  --text-dark: #666666;
-  --bg-input-light: #E5E5E5;
+.category-floating-indicator {
+  border-radius: 12px !important; /* Use !important to override internal styles */
+  background: var(--bg-input-dark);
 }

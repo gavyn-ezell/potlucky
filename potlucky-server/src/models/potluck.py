@@ -14,9 +14,10 @@ class PotluckPayload(BaseModel):
     name: str
     datetime: str
     information: str | None
+    requirements: dict[Literal["main", "side", "dessert", "drinks", "other"], int]
 
     
 class PotluckItem(PotluckPayload):
     potluckId: str
     dishes: dict[str, DishPayload] = {}
-
+    expire_at: int
