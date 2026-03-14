@@ -177,7 +177,7 @@ function RouteComponent() {
 							{categoryProgress &&
 								<>
 									{/* ── Shared Modals ── */}
-									<Modal size="md" opened={viewProgressModalOpened} padding={0} onClose={viewProgressModalHandlers.close} title={<Text size="lg" fw="bold">Dish Goals</Text>}>
+									<Modal size="md" opened={viewProgressModalOpened} padding={0} onClose={viewProgressModalHandlers.close} title={<Text size="lg" fw="bold">Dish Goals</Text>} styles={{ header: { position: 'static' } }}>
 										<Stack justify="center" w="100%">
 											{Array.from(categoryProgress).map(([category, progress]) => (
 												<CategoryProgressStats key={category} category={category} progress={progress} />
