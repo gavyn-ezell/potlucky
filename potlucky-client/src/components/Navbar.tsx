@@ -1,7 +1,5 @@
 import { ActionIcon, AppShell, Box, Button, Container, Drawer, Group, Stack } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { useLocation } from '@tanstack/react-router'
-import { useEffect, useRef } from "react";
 import { IconLayoutSidebarLeftExpand } from "@tabler/icons-react";
 import "../styles.css";
 
@@ -13,22 +11,7 @@ import "../styles.css";
  * A portal target (#navbar-right-portal) allows route-specific content on the right side on mobile.
  */
 export function Navbar() {
-	const location = useLocation();
-	const pathname = location.pathname
-	const createLink = useRef<HTMLAnchorElement | null>(null);
-	const tutorialLink = useRef<HTMLAnchorElement | null>(null);
 	const [drawerOpened, drawerHandlers] = useDisclosure(false);
-
-	useEffect(() => {
-		if (createLink != null && tutorialLink != null) {
-			if (pathname === "/") {
-				createLink!!.current!!.style.color = "var(--orange-primary)"
-			}
-			if (pathname === "/tutorial") {
-				tutorialLink!!.current!!.style.color = "var(--orange-primary)Why"
-			}
-		}
-	}, [location])
 
 	return (
 		<>
@@ -44,7 +27,7 @@ export function Navbar() {
 			>
 				<Stack gap="xs">
 					<Button component="a" href="/" variant="subtle" c="var(--text-light)" justify="flex-start" onClick={drawerHandlers.close}>Create</Button>
-					<Button component="a" href="/tutorial" variant="subtle" c="var(--text-light)" justify="flex-start" onClick={drawerHandlers.close}>How it works</Button>
+
 				</Stack>
 			</Drawer>
 
@@ -67,8 +50,7 @@ export function Navbar() {
 
 						{/* Desktop nav links — hidden on mobile */}
 						<Group gap={0} display={{ base: "none", sm: "flex" }}>
-							<Button id="create-link" ref={createLink} component="a" href="/" variant="transparent" c="var(--text-white)">Create</Button>
-							<Button id="tutorial-link" ref={tutorialLink} component="a" href="/tutorial" variant="transparent" c="var(--text-white)">How it works</Button>
+							<Button id="create-link" component="a" href="/" variant="transparent" c="var(--text-white)">Create</Button>
 						</Group>
 
 						{/* Portal target for route-specific mobile content (e.g. attendees icon) */}
