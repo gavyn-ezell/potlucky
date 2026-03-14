@@ -313,7 +313,7 @@ function RouteComponent() {
 
 									{/* ── Column 2: Dish Goals (order 3 on mobile, 3 on desktop) ── */}
 									<Grid.Col
-										span={{ base: 12, sm: 4 }}
+										span={{ base: 12, sm: 3 }}
 										order={{ base: 3, sm: 3 }}
 									>
 										<Card withBorder>
@@ -383,7 +383,7 @@ function RouteComponent() {
 
 									{/* ── Column 3: Dishes Table (order 2 on mobile, 2 on desktop) ── */}
 									<Grid.Col
-										span={{ base: 12, sm: 5 }}
+										span={{ base: 12, sm: 6 }}
 										order={{ base: 2, sm: 2 }}
 									>
 										<Stack>
