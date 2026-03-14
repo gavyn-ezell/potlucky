@@ -387,44 +387,46 @@ function RouteComponent() {
 										order={{ base: 2, sm: 2 }}
 									>
 										<Stack>
-											<Group align="center" justify="space-between" wrap="wrap" gap="sm">
-												<Combobox
-													store={combobox}
-													onOptionSubmit={(val) => {
-														setActiveTab(val as (Category | "all"));
-														combobox.closeDropdown();
-													}}
-												>
-													<Combobox.Target>
-														<InputBase
-															component="button"
-															type="button"
-															style={{ width: "100px" }}
-															pointer
-															rightSection={<Combobox.Chevron />}
-															rightSectionPointerEvents="none"
-															onClick={() => combobox.toggleDropdown()}
-														>
-															{activeTab.charAt(0).toUpperCase() + activeTab.slice(1) + (["main", "side", "dessert"].includes(activeTab) ? "s" : "")}
-														</InputBase>
-													</Combobox.Target>
-
-													<Combobox.Dropdown>
-														<Combobox.Options>
-															<Combobox.Option value="all" key="all">All</Combobox.Option>
-															{Object.values(Category).map((cat) => (
-																<Combobox.Option value={cat} key={cat}>
-																	{cat.charAt(0).toUpperCase() + cat.slice(1) + (["main", "side", "dessert"].includes(cat) ? "s" : "")}
-																</Combobox.Option>
-															))}
-														</Combobox.Options>
-													</Combobox.Dropdown>
-												</Combobox>
-
-												<Stack gap={4} align="flex-end">
-													{currentAttendee && (
+											<Stack gap={4}>
+												{currentAttendee && (
+													<Flex justify="flex-end">
 														<Text size="xs" c="dimmed">Signed in as <Text span size="xs" fw={600} c="var(--orange-primary)">{currentAttendee}</Text></Text>
-													)}
+													</Flex>
+												)}
+												<Group align="center" justify="space-between" wrap="wrap" gap="sm">
+													<Combobox
+														store={combobox}
+														onOptionSubmit={(val) => {
+															setActiveTab(val as (Category | "all"));
+															combobox.closeDropdown();
+														}}
+													>
+														<Combobox.Target>
+															<InputBase
+																component="button"
+																type="button"
+																style={{ width: "100px" }}
+																pointer
+																rightSection={<Combobox.Chevron />}
+																rightSectionPointerEvents="none"
+																onClick={() => combobox.toggleDropdown()}
+															>
+																{activeTab.charAt(0).toUpperCase() + activeTab.slice(1) + (["main", "side", "dessert"].includes(activeTab) ? "s" : "")}
+															</InputBase>
+														</Combobox.Target>
+
+														<Combobox.Dropdown>
+															<Combobox.Options>
+																<Combobox.Option value="all" key="all">All</Combobox.Option>
+																{Object.values(Category).map((cat) => (
+																	<Combobox.Option value={cat} key={cat}>
+																		{cat.charAt(0).toUpperCase() + cat.slice(1) + (["main", "side", "dessert"].includes(cat) ? "s" : "")}
+																	</Combobox.Option>
+																))}
+															</Combobox.Options>
+														</Combobox.Dropdown>
+													</Combobox>
+
 													<Group gap="sm">
 														<CopyButton value={typeof window !== 'undefined' ? window.location.href : ''}>
 															{({ copy }) => (
@@ -453,8 +455,8 @@ function RouteComponent() {
 															Add Dish
 														</Button>
 													</Group>
-												</Stack>
-											</Group>
+												</Group>
+											</Stack>
 
 											<Card withBorder radius="md" p={0} style={{ overflowX: 'auto' }}>
 												<Table style={{ ...transitionStyle, minWidth: 340 }}>
